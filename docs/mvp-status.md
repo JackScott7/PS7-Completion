@@ -11,7 +11,7 @@ WinGet publication is deferred. No repository visibility change is required.
 | --- | --- |
 | M1 foundation | Whole-registry/config validation before registration; lazy bundled provider files; metadata/status; inline/file user registration and replacement rules. Core/Registration and Core/Context tests include fresh-shell exclusion checks. |
 | M2 context/results | Literal AST decoding, cursor boundaries, escaped/quoted input, no expression evaluation, safe insertion and buffered failure handling. Core/Context and Core/Module tests plus special-character round trips. |
-| M3 queries/cache | Killable read-only worker, shared 500 ms work budget (2000 ms for SSH cold-start queries), cleanup, 30-second monotonic TTL, file dependencies, generation-safe clearing and 128-entry bound. Core/Queries tests exercise expiry, failures, clearing and termination. |
+| M3 queries/cache | Killable read-only worker for processes, services and tasks with a shared 500 ms work budget; SSH config parsed in process with cooperative 500 ms checks. 30-second monotonic TTL, file dependencies, generation-safe clearing and 128-entry bound. Core/Queries tests exercise expiry, failures, clearing and termination. |
 | M4 providers | All five bundled providers use argument-aware logic; local SSH aliases/tasks/services/processes; static WinGet syntax. Provider-specific tests cover positive and wrong-position cases. See providers.md for supported subsets. |
 | M5 private packaging | Versioned ZIP/EXE from isolated payloads; matching versions; MIT; hashes and manifest generation. Disposable Windows CI proves install, reinstall, upgrade, retained-version discovery and uninstall preserving added files. |
 | M6 validation | Pester and analyzer, build tests, interactive Tab smoke checks, performance script, current/minimum PowerShell CI, documentation and user example. Specific results below. |
@@ -72,6 +72,10 @@ performance target, not a passed gate. Import performs no network or system-data
 queries. Arbitrary custom callbacks are trusted in-session PowerShell and are not
 subject to the private worker's timeout. Worker termination/disposal adds latency
 beyond the 500 ms work deadline (about 40–60 ms in the timeout regression).
+Fresh-shell `ssh s` completion against a linked local SSH config improved from
+735 ms median (839 ms p95) to 152 ms median (171 ms p95) in seven before/after
+samples using `scripts/Measure-SshCompletion.ps1`. The timer begins after module
+import; import latency is measured separately above.
 
 ## Deferred or not certified
 

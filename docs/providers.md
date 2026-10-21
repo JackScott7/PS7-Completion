@@ -21,7 +21,7 @@ tool help during import/completion or promise identical options in every release
 SSH config reads are limited to fixed local drives: no UNC paths, network drives
 or links to non-local targets. Local symbolic links and junctions are supported,
 with at most 32 nested link resolutions. Limits: Include depth 8, 64 visited files, 1 MiB per
-file, 4 MiB total, 4096 aliases, plus the worker deadline. Includes support quoted
+file, 4 MiB total, 4096 aliases, plus cooperative 500 ms traversal checks. Includes support quoted
 paths, `~/`, relative paths resolved under the user's `.ssh` folder, and wildcard
 filenames in a literal directory. Wildcards in directory components, environment
 expansion and conditional Match execution are not supported. Match blocks are

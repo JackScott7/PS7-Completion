@@ -95,12 +95,13 @@ under `Private/`; preserve the documented external provider context.
 
 ### M3. Bounded read-only data and caching
 
-- [x] Implement a shared query runner with a **500 ms wall-clock query work deadline** (2000 ms for SSH cold-start queries),
+- [x] Implement a shared query runner for processes, services and tasks with a **500 ms wall-clock query work deadline**,
   cancellation and disposal. An abandoned background job/runspace is not a timeout
   implementation. Bound the aggregate dynamic-query work per completion request
   to the same budget; do not allow sequential queries to multiply the wait. OS
   termination/disposal adds latency after the deadline; arbitrary custom callbacks
   are trusted in-session code and do not run inside this private query runner.
+  SSH uses a bounded in-process parser with cooperative 500 ms traversal checks.
 - [x] Use local PowerShell/Windows read-only data access for tasks, services and
   processes. Do not launch `ssh`, `winget`, `schtasks`, `sc.exe`, or `taskkill` from
   their completers, and never execute a command assembled from user input.

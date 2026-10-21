@@ -38,12 +38,6 @@ try {
             }
             finally { [void][Runtime.InteropServices.Marshal]::ReleaseComObject($scheduler) }
         }
-        'SshHosts' {
-            . (Join-Path $PSScriptRoot 'SshConfig.ps1')
-            $result = Read-PS7SshConfig -Path $request.Path
-            $dependencies = $result.Dependencies
-            $result.Hosts
-        }
         default { throw 'Unknown query kind.' }
     }
     @{ Data = @($data); Dependencies = @($dependencies) } | ConvertTo-Json -Depth 8 -Compress

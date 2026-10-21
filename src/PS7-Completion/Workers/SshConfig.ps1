@@ -1,6 +1,7 @@
 function Read-PS7SshConfig {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', 'Clock', Justification = 'Nested time-budget checks read the enclosing parser clock.')]
     [CmdletBinding()]
-    param([Parameter(Mandatory)][string] $Path)
+    param([Parameter(Mandatory)][string] $Path, [Diagnostics.Stopwatch] $Clock)
     $state = @{
         Hosts = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
         Visited = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
@@ -8,7 +9,11 @@ function Read-PS7SshConfig {
         Bytes = 0L
     }
     $sshRoot = Join-Path ([Environment]::GetFolderPath('UserProfile')) '.ssh'
+    function Assert-TimeBudget {
+        if ($Clock -and $Clock.ElapsedMilliseconds -ge 500) { throw 'SSH config read deadline exceeded.' }
+    }
     function Test-LocalPath([string] $Candidate, [int] $LinkDepth = 0) {
+        Assert-TimeBudget
         if ($LinkDepth -ge 32) { return $false }
         if ($Candidate.StartsWith('\\') -or $Candidate.StartsWith('//')) { return $false }
         $full = [IO.Path]::GetFullPath($Candidate)
@@ -18,6 +23,7 @@ function Read-PS7SshConfig {
         $parts = [Collections.Generic.Stack[string]]::new()
         for ($part = $full; $part; $part = [IO.Path]::GetDirectoryName($part)) { $parts.Push($part) }
         foreach ($part in $parts) {
+            Assert-TimeBudget
             $item = Get-Item -LiteralPath $part -Force -ErrorAction Ignore
             if ($item -and ($item.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
                 $target = $item.LinkTarget
@@ -41,6 +47,7 @@ function Read-PS7SshConfig {
         $state.Dependencies.Add(@{ Path = $Candidate; Stamp = $stamp })
     }
     function Read-ConfigFile([string] $Candidate, [int] $Depth) {
+        Assert-TimeBudget
         if ($Depth -gt 8 -or $state.Visited.Count -ge 64) { throw 'SSH Include limit exceeded.' }
         if (-not (Test-LocalPath $Candidate)) { return }
         $full = [IO.Path]::GetFullPath($Candidate)
@@ -53,6 +60,7 @@ function Read-PS7SshConfig {
         $conditional = $false
         try { $lines = [IO.File]::ReadAllLines($full) } catch { return }
         foreach ($line in $lines) {
+            Assert-TimeBudget
             if ($line -notmatch '^\s*(Host|Include|Match)(?:\s*=\s*|\s+)(.*)$') { continue }
             $directive = $Matches[1]
             $body = $Matches[2]

@@ -66,7 +66,9 @@ Provider failure must not break interactive completion: return no results and
 write diagnostic detail only to the debug stream. No provider may execute the
 command being completed or perform mutating operations. Dynamic queries must be
 local, read-only, bounded, and tolerate unavailable commands and access denial.
-Bundled dynamic queries use a 500 ms shared work deadline (2000 ms for SSH cold-start queries) and a 30-second cache TTL.
+Processes, services and tasks use a 500 ms shared worker deadline. SSH config
+uses a bounded in-process parser with cooperative 500 ms traversal checks.
+Bundled dynamic queries use a 30-second cache TTL.
 The worker is terminated and reaped on timeout; OS termination/disposal latency is
 additional to the work budget. Custom providers are trusted in-session code, not
 sandboxed or forcibly time-limited; their authors own query behavior and latency.

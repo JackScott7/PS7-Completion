@@ -13,6 +13,9 @@ foreach ($folder in @('Private', 'Public')) {
     [Array]::Sort($files, [StringComparer]::Ordinal)
     foreach ($file in $files) { . $file }
 }
+# The local SSH parser is small and must be available in module scope on the
+# first completion, without creating a second PowerShell process.
+. (Join-Path $PSScriptRoot 'Workers/SshConfig.ps1')
 if ($null -eq $Configuration) { throw 'Configuration cannot be null.' }
 foreach ($key in $Configuration.Keys) { if ($key -ne 'Exclude') { throw "Unknown configuration key: $key" } }
 $script:Excluded = @()

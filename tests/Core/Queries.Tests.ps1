@@ -3,20 +3,25 @@ BeforeAll {
 }
 Describe 'Bounded query cache' {
     BeforeEach { InModuleScope PS7-Completion { Clear-PS7CompletionCache } }
-    It 'allows a cold SSH worker longer than 500 ms while retaining a deadline' {
-        $worker = Join-Path $TestDrive 'cold.ps1'
-        Set-Content $worker 'param([string]$RequestBase64); Start-Sleep -Milliseconds 600; ''{"Data":["strawberryvps"],"Dependencies":[]}'''
-        InModuleScope PS7-Completion -Parameters @{ Worker = $worker } {
-            param($Worker)
-            $original = (Get-Command Invoke-PS7QueryProcess).ScriptBlock
+    It 'reads SSH aliases in process without starting a worker' {
+        $config = Join-Path $TestDrive 'config'
+        Set-Content $config 'Host strawberryvps'
+        InModuleScope PS7-Completion -Parameters @{ Config = $config } {
+            param($Config)
+            Mock Invoke-PS7QueryProcess { throw 'Worker was started.' }
+            Get-PS7QueryData SshHosts $Config | Should -Be 'strawberryvps'
+            Should -Invoke Invoke-PS7QueryProcess -Times 0
+        }
+    }
+    It 'keeps a time limit on in-process SSH parsing' {
+        $config = Join-Path $TestDrive 'config'
+        Set-Content $config 'Host strawberryvps'
+        InModuleScope PS7-Completion -Parameters @{ Config = $config } {
+            param($Config)
             $script:QueryClock = [Diagnostics.Stopwatch]::StartNew()
-            Mock Invoke-PS7QueryProcess {
-                param($Request, $TimeoutMilliseconds)
-                & $original -Request $Request -TimeoutMilliseconds $TimeoutMilliseconds -WorkerPath $Worker
-            }
-            try {
-                Get-PS7QueryData SshHosts fixture | Should -Be 'strawberryvps'
-            } finally { $script:QueryClock = $null }
+            Start-Sleep -Milliseconds 501
+            try { { Get-PS7QueryData SshHosts $Config } | Should -Throw '*deadline*' }
+            finally { $script:QueryClock = $null }
         }
     }
     It 'caches successful empty results' {
@@ -30,12 +35,14 @@ Describe 'Bounded query cache' {
     It 'separates kinds and paths and expires entries after 30 seconds' {
         InModuleScope PS7-Completion {
             Mock Invoke-PS7QueryProcess { @{ Data = @('value'); Dependencies = @() } }
+            Mock Read-PS7SshConfig { @{ Hosts = @('value'); Dependencies = @() } }
             Get-PS7QueryData SshHosts a | Out-Null
             Get-PS7QueryData SshHosts b | Out-Null
             Get-PS7QueryData Services | Out-Null
             $script:Cache['SshHosts|a'].Created -= 31 * [Diagnostics.Stopwatch]::Frequency
             Get-PS7QueryData SshHosts a | Out-Null
-            Should -Invoke Invoke-PS7QueryProcess -Times 4 -Exactly
+            Should -Invoke Read-PS7SshConfig -Times 3 -Exactly
+            Should -Invoke Invoke-PS7QueryProcess -Times 1 -Exactly
         }
     }
     It 'does not cache failures or results cleared in flight' {
@@ -50,11 +57,11 @@ Describe 'Bounded query cache' {
     }
     It 'invalidates dependencies and bounds cache growth' {
         InModuleScope PS7-Completion {
-            Mock Invoke-PS7QueryProcess { @{ Data = @(); Dependencies = @(@{ Path = 'fixture'; Stamp = 'old' }) } }
+            Mock Read-PS7SshConfig { @{ Hosts = @(); Dependencies = @(@{ Path = 'fixture'; Stamp = 'old' }) } }
             Mock Get-PS7DependencyStamp { 'new' }
             Get-PS7QueryData SshHosts a | Out-Null
             Get-PS7QueryData SshHosts a | Out-Null
-            Should -Invoke Invoke-PS7QueryProcess -Times 2 -Exactly
+            Should -Invoke Read-PS7SshConfig -Times 2 -Exactly
             foreach ($i in 1..130) { Get-PS7QueryData SshHosts "path$i" | Out-Null }
             $script:Cache.Count | Should -Be 128
         }
