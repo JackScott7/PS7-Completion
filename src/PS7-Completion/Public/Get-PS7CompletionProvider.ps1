@@ -8,9 +8,10 @@ function Get-PS7CompletionProvider {
         [pscustomobject]@{
             Name = $name
             Commands = $script:Registry[$name].Commands
-            Enabled = $name -notin $script:Excluded
+            Enabled = $script:Registry[$name].Enabled
             Loaded = $script:Providers.ContainsKey($name)
-            Status = 'Static scaffold'
+            Status = $script:Registry[$name].Status
+            Source = $script:Registry[$name].Source
         }
     }
 }

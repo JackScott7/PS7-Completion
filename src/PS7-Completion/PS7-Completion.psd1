@@ -6,7 +6,7 @@
     Description = 'Lazy native command completion for PowerShell 7 on Windows.'
     PowerShellVersion = '7.4'
     CompatiblePSEditions = @('Core')
-    FunctionsToExport = @('Get-PS7CompletionProvider', 'Clear-PS7CompletionCache')
+    FunctionsToExport = @('Get-PS7CompletionProvider', 'Clear-PS7CompletionCache', 'Register-PS7CompletionProvider', 'New-PS7CompletionResult')
     CmdletsToExport = @()
     VariablesToExport = @()
     AliasesToExport = @()

@@ -5,4 +5,5 @@ function Clear-PS7CompletionCache {
     [CmdletBinding()]
     param()
     $script:Cache.Clear()
+    $script:CacheGeneration++
 }

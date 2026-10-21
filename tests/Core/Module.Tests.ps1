@@ -6,11 +6,13 @@ BeforeAll {
     Import-Module $manifest -Force
 }
 Describe 'Module contract' {
-    It 'exports only the two public commands' {
+    It 'exports the four public commands' {
         $commands = @(Get-Command -Module PS7-Completion | Select-Object -ExpandProperty Name)
-        $commands.Count | Should -Be 2
+        $commands.Count | Should -Be 4
         $commands | Should -Contain 'Get-PS7CompletionProvider'
         $commands | Should -Contain 'Clear-PS7CompletionCache'
+        $commands | Should -Contain 'Register-PS7CompletionProvider'
+        $commands | Should -Contain 'New-PS7CompletionResult'
     }
     It 'registers all five providers without eagerly loading them' {
         @(Get-PS7CompletionProvider).Count | Should -Be 5
