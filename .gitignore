@@ -1,0 +1,4 @@
+dist/
+TestResults.xml
+*.log
+.DS_Store

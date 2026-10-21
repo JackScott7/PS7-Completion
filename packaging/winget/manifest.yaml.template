@@ -1,0 +1,16 @@
+# UNPUBLISHED TEMPLATE: replace every placeholder before validation/submission.
+PackageIdentifier: JackScott7.PS7-Completion
+PackageVersion: __VERSION__
+PackageLocale: en-US
+Publisher: __CONFIRMED_PUBLISHER__
+PackageName: PS7-Completion
+License: __LICENSE__
+ShortDescription: Native executable completion for PowerShell 7 on Windows.
+Installers:
+  - Architecture: x64
+    InstallerType: inno
+    Scope: machine
+    InstallerUrl: https://github.com/__OWNER__/PS7-Completion/releases/download/v__VERSION__/PS7-Completion-__VERSION__-windows-x64.exe
+    InstallerSha256: __SHA256__
+ManifestType: singleton
+ManifestVersion: 1.6.0

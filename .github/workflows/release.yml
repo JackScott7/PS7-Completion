@@ -1,0 +1,31 @@
+name: Draft release
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build dependencies
+        run: |
+          Install-Module Pester -RequiredVersion 5.7.1 -Force -Scope CurrentUser
+          Install-Module PSScriptAnalyzer -RequiredVersion 1.24.0 -Force -Scope CurrentUser
+          choco install innosetup --version=6.4.3 --yes --no-progress
+          if ($LASTEXITCODE -ne 0) { throw 'Inno Setup installation failed.' }
+          'C:\Program Files (x86)\Inno Setup 6' >> $env:GITHUB_PATH
+      - run: ./scripts/Test.ps1
+      - run: ./scripts/Build.ps1 -Installer
+      - name: Create draft with checksums
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = (Import-PowerShellDataFile ./src/PS7-Completion/PS7-Completion.psd1).ModuleVersion
+          $assets = @(Get-ChildItem ./dist -File | Where-Object Extension -In '.exe', '.zip')
+          $assets | Get-FileHash -Algorithm SHA256 | ForEach-Object { '{0}  {1}' -f $_.Hash, (Split-Path $_.Path -Leaf) } | Set-Content ./dist/SHA256SUMS.txt
+          gh release create "v$version" --target '${{ github.sha }}' --draft --title "PS7-Completion $version" --notes 'Draft: complete all specification release gates before publication.' $assets.FullName ./dist/SHA256SUMS.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Draft release creation failed.' }

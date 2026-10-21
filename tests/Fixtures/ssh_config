@@ -1,0 +1,7 @@
+# Offline sample for future SSH host parsing tests.
+Host development
+    HostName 192.0.2.10
+Host "alias with spaces"
+    HostName 192.0.2.11
+Host *.example !blocked.example
+    User example
