@@ -3,6 +3,22 @@ BeforeAll {
 }
 Describe 'Bounded query cache' {
     BeforeEach { InModuleScope PS7-Completion { Clear-PS7CompletionCache } }
+    It 'allows a cold SSH worker longer than 500 ms while retaining a deadline' {
+        $worker = Join-Path $TestDrive 'cold.ps1'
+        Set-Content $worker 'param([string]$RequestBase64); Start-Sleep -Milliseconds 600; ''{"Data":["strawberryvps"],"Dependencies":[]}'''
+        InModuleScope PS7-Completion -Parameters @{ Worker = $worker } {
+            param($Worker)
+            $original = (Get-Command Invoke-PS7QueryProcess).ScriptBlock
+            $script:QueryClock = [Diagnostics.Stopwatch]::StartNew()
+            Mock Invoke-PS7QueryProcess {
+                param($Request, $TimeoutMilliseconds)
+                & $original -Request $Request -TimeoutMilliseconds $TimeoutMilliseconds -WorkerPath $Worker
+            }
+            try {
+                Get-PS7QueryData SshHosts fixture | Should -Be 'strawberryvps'
+            } finally { $script:QueryClock = $null }
+        }
+    }
     It 'caches successful empty results' {
         InModuleScope PS7-Completion {
             Mock Invoke-PS7QueryProcess { @{ Data = @(); Dependencies = @() } }

@@ -95,7 +95,7 @@ under `Private/`; preserve the documented external provider context.
 
 ### M3. Bounded read-only data and caching
 
-- [x] Implement a shared query runner with a **500 ms wall-clock query work deadline**,
+- [x] Implement a shared query runner with a **500 ms wall-clock query work deadline** (2000 ms for SSH cold-start queries),
   cancellation and disposal. An abandoned background job/runspace is not a timeout
   implementation. Bound the aggregate dynamic-query work per completion request
   to the same budget; do not allow sequential queries to multiply the wait. OS

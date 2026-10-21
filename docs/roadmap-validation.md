@@ -22,7 +22,7 @@ contains the current test/installer evidence and remaining limitations.
 | CompletionResult, prefix matching and safe quoting | M2 | Type checks and parse round-trip tests |
 | Failure isolation and debug-only diagnostics | M2, M3, R3 | Throw/non-terminating/partial-output tests |
 | Read-only local operations; never execute completed command | M3, M4 | Mocked query boundaries and execution assertions |
-| 500 ms timeout, 30-second TTL, cache keys/file metadata | M3, F3 | Fake-clock, deadline/cleanup and invalidation tests |
+| 500 ms timeout (2000 ms SSH), 30-second TTL, cache keys/file metadata | M3, F3 | Fake-clock, deadline/cleanup and invalidation tests |
 | Two public commands, metadata fields and exclusions | M1, M3, R1 | Export/parameter/registration/cache tests |
 | No restoration promises; explicit profile activation | M1, M5, S5 | Fresh-shell tests and reviewed user docs |
 | SSH options, Host aliases and bounded Includes | M4, F1–F2 | SSH capability/config fixtures |

@@ -63,7 +63,10 @@ function Get-PS7QueryData {
         $script:Cache.Remove($key)
     }
     $generation = $script:CacheGeneration
-    $remaining = if ($null -ne $script:QueryClock) { 500 - [int]$script:QueryClock.ElapsedMilliseconds } else { 500 }
+    # SSH config discovery must accommodate cold PowerShell worker startup.
+    # Keep the aggregate deadline and termination behavior, rather than retrying.
+    $budget = if ($Kind -eq 'SshHosts') { 2000 } else { 500 }
+    $remaining = if ($null -ne $script:QueryClock) { $budget - [int]$script:QueryClock.ElapsedMilliseconds } else { $budget }
     $response = Invoke-PS7QueryProcess -Request @{ Kind = $Kind; Path = $Path } -TimeoutMilliseconds $remaining
     if (-not $response.ContainsKey('Data') -or -not $response.ContainsKey('Dependencies')) { throw 'Invalid query response.' }
     $data = @($response.Data | Select-Object -First 4096)

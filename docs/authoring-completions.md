@@ -55,7 +55,7 @@ work minimal. Custom code is trusted PowerShell code running **in the current
 session**, not a sandbox; the framework cannot prevent side effects or forcibly
 time out arbitrary callbacks. Custom providers must stay fast, read-only and local.
 The private worker/cache API is intentionally not exported as a general code runner.
-Bundled dynamic queries use a killable worker, a 500 ms shared work budget, a
+Bundled dynamic queries use a killable worker, a 500 ms shared work budget (2000 ms for SSH cold-start queries), a
 30-second cache TTL, at most 128 cache entries and 4096 fetched values per query.
 Termination/disposal adds a small amount of time beyond the query deadline.
 

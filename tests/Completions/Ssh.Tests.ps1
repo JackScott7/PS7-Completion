@@ -65,5 +65,3 @@ Describe 'SSH argument contexts' {
         }
     }
 }
-
-
