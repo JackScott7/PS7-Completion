@@ -1,9 +1,9 @@
 # PS7-Completion
 
 Native command completion for Windows and PowerShell 7.4+. The v0.1 framework
-supports custom providers and five bundled providers: `ssh`, `winget`, `schtasks`,
-`sc.exe`, and `taskkill`. It parses argument context, quotes completion values,
-and loads provider files only when needed.
+supports custom providers and 22 bundled providers, including Git, GitHub CLI,
+ripgrep, Python/pip, uv, Node/npm, Rust, and the original Windows tools. It parses
+argument context, quotes completion values, and loads provider files only when needed.
 
 This repository remains private. WinGet publication is deferred by project-owner
 decision; do not run the planned WinGet install command expecting a public package.
@@ -30,7 +30,7 @@ To exclude providers, use this instead on the first import in a fresh shell:
 Import-Module ./src/PS7-Completion/PS7-Completion.psd1 -ArgumentList @{ Exclude = @('ssh', 'services') }
 ```
 
-Provider IDs are `ssh`, `winget`, `schtasks`, `services`, and `taskkill`. Exclusion
+Provider IDs are listed in the [provider reference](docs/providers.md). Exclusion
 does not restore previous completers; restart the shell when changing exclusions.
 Bundled providers include local SSH aliases, task names, service names, process
 names/PIDs, and context-specific flags. See the [supported syntax](docs/providers.md).

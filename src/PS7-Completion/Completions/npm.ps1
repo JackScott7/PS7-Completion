@@ -1,0 +1,5 @@
+{
+    param($Context)
+    $syntax = New-PS7SyntaxNode '--help --version -v --global -g' '--prefix --registry --userconfig' -Children @{ install=(New-PS7SyntaxNode '--help --save-dev -D --save-exact -E --global -g --package-lock-only --ignore-scripts --dry-run'); ci=(New-PS7SyntaxNode '--help --ignore-scripts --dry-run'); uninstall=(New-PS7SyntaxNode '--help --global -g --save-dev -D'); update=(New-PS7SyntaxNode '--help --global -g'); run=(New-PS7SyntaxNode '--help --if-present' -StopAtPositional); test=(New-PS7SyntaxNode '--help' -StopAtPositional); start=(New-PS7SyntaxNode '--help' -StopAtPositional); exec=(New-PS7SyntaxNode '--help --yes' '--package' -StopAtPositional); init=(New-PS7SyntaxNode '--help --yes -y'); list=(New-PS7SyntaxNode '--help --all --json --global -g' '--depth'); audit=(New-PS7SyntaxNode '--help --json' -Children @{ fix=(New-PS7SyntaxNode '--force --dry-run') }); outdated=(New-PS7SyntaxNode '--help --json'); view=(New-PS7SyntaxNode '--help --json') }
+    Invoke-PS7SyntaxCompletion -Context $Context -Syntax $syntax
+}

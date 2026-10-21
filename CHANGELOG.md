@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Add 17 static built-in providers for developer tools, with command-specific
+  options, finite operand values, and Python-to-pip delegation.
+- Record WinGet installation identities and portable/Python-package distinctions.
+
 ## 0.1.0 — private MVP
 
 - Register custom inline or lazy-file completion providers without editing the module.

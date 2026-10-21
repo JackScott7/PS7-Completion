@@ -13,6 +13,47 @@ All dynamic data is local; remote-target contexts suppress local entity names.
 | sc.exe (provider ID `services`) | `query queryex start stop qc config create delete description`; existing internal service names in applicable positions; `key= value` syntax for query/config/create with finite type/state/start/error/tag values. Creation names, binary paths and descriptions remain free text. |
 | taskkill / taskkill.exe | `/PID /IM /FI /F /T /? /S /U /P`; local PID/image values after their respective selectors, including repeated selectors. Filter expressions and credentials remain free text. |
 
+## Developer tools
+
+The following 17 providers use literal syntax tables, with no native process,
+network request, project import, repository scan, or package discovery during
+completion. Each supports the bare command and `.exe` spelling, except npm,
+which supports `npm`, `npm.cmd`, and `npm.ps1`. Python and pip also support
+`python3[.exe]` and `pip3[.exe]`. Provider IDs are in the first column.
+
+| ID | Command and supported subset |
+| --- | --- |
+| git | `git`: status, add, commit, diff, log, clone, fetch, pull, push, branch, switch, checkout, restore, remote add/remove/rename, stash push/pop/list/apply; root `-C`/`-c` operands. No branch or remote enumeration. |
+| gh | `gh`: auth login/status/logout, pr list/view/create/checkout, issue list/view/create, repo clone/view/list, workflow list/view/run. PR state values. No API requests. |
+| ripgrep | `rg`: common search/output flags; pattern, file, glob, type, context, replacement operands; color values. |
+| jq | Input/output flags; filter-file and indentation operands; two operands for `--arg`, `--argjson`, `--slurpfile`, `--rawfile`. No jq-language completion. |
+| python | Interpreter flags and module names after `-m`; delegates literal `python [-I etc.] -m pip` to pip. Stops at scripts, inline code, and other module bodies. |
+| pip | install, uninstall, list, freeze, show, check, download, cache dir/info/list/purge/remove; list format values. No package enumeration. |
+| uv | init, add, remove, sync, lock, run, venv; python list/install/find/pin/uninstall; tool run/install/list/uninstall/upgrade; pip install/list/freeze/uninstall/check/compile/sync. |
+| flask | Root app/env-file/debug options; run, routes, shell; routes sort values. No application imports or custom command discovery. |
+| fastapi | dev and run, host/port/app/entrypoint/root-path operands, reload flags, run workers. |
+| tailscale | up, down, status, ip, ping, version, logout, set; common flags and operands. No peer discovery. |
+| node | Interpreter flags, eval/print/require/import/env-file operands, input-type values. Stops at script or inline-code arguments. |
+| npm | install, ci, uninstall, update, run, test, start, exec, init, list, audit/fix, outdated, view. No package or script-name discovery. |
+| sqlite3 | CLI startup flags and cmd/init/separator/nullvalue operands. Stops at database filename; no SQL or interactive dot-command completion. |
+| ffmpeg | Common input/output, codec, bitrate, filter, map, timing and encoding flags; loglevel values. No codec/device probing. |
+| rustc | Compiler flags and operands; edition, crate-type, error-format values. |
+| rustup | show, update, default, toolchain list/install/uninstall, target/component list/add/remove, run. No installed-toolchain enumeration. |
+| nano | GNU nano Windows flags and syntax/tabsize/rcfile/directory operands. |
+
+These are intentionally bounded subsets. Unknown flags/subcommands suppress
+suggestions; an exact `--` ends completion. Option names are case-sensitive
+(e.g. ripgrep `-F` is a flag, `-f` needs a file). Recognized `--option=value`
+operands are consumed; attached short values and combined short flags are not
+parsed. Free-form operands never receive unrelated flag suggestions. Options
+are scoped to their documented command node; not every inherited/global flag
+is repeated at every depth. Forwarded commands (uv run/tool run, npm run/exec,
+rustup run) stop at the first positional. PowerShell filesystem fallback may
+still occur when a provider returns nothing.
+
+See [installation identification](provider-origins.md) for the WinGet inventory,
+local executable checks, versions, and upstream references used for these tools.
+
 The option tables in `Completions/*.ps1` define arity (operand versus flag) and
 applicability. `tests/Completions` contains positive and wrong-position cases for
 these tables. This is static syntax support; the module does not probe installed
