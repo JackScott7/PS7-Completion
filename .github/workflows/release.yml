@@ -29,5 +29,7 @@ jobs:
         run: |
           $build = Get-Content ./dist/latest-build.json -Raw | ConvertFrom-Json
           $version = $build.Version
-          gh release create "v$version" --target '${{ github.sha }}' --draft --title "PS7-Completion $version" --notes 'Unsigned development build. Complete all specification release gates before publication.' $build.Assets ./dist/winget/JackScott7.PS7-Completion.yaml
+          $notes = Join-Path 'docs/releases' "v$version.md"
+          if (-not (Test-Path $notes)) { throw "Missing release notes: $notes" }
+          gh release create "v$version" --target '${{ github.sha }}' --draft --title "PS7-Completion $version" --notes-file $notes $build.Assets ./dist/winget/JackScott7.PS7-Completion.yaml
           if ($LASTEXITCODE -ne 0) { throw 'Draft release creation failed.' }
