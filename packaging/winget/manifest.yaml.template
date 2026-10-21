@@ -2,15 +2,18 @@
 PackageIdentifier: JackScott7.PS7-Completion
 PackageVersion: __VERSION__
 PackageLocale: en-US
-Publisher: __CONFIRMED_PUBLISHER__
+Publisher: JackScott7
+PublisherUrl: https://github.com/JackScott7
+PackageUrl: https://github.com/JackScott7/PS7-Completion
 PackageName: PS7-Completion
-License: __LICENSE__
+License: MIT
+LicenseUrl: https://github.com/JackScott7/PS7-Completion/blob/main/LICENSE
 ShortDescription: Native executable completion for PowerShell 7 on Windows.
 Installers:
   - Architecture: x64
     InstallerType: inno
     Scope: machine
-    InstallerUrl: https://github.com/__OWNER__/PS7-Completion/releases/download/v__VERSION__/PS7-Completion-__VERSION__-windows-x64.exe
+    InstallerUrl: https://github.com/JackScott7/PS7-Completion/releases/download/v__VERSION__/PS7-Completion-__VERSION__-windows-x64.exe
     InstallerSha256: __SHA256__
 ManifestType: singleton
 ManifestVersion: 1.6.0
