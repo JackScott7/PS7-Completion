@@ -23,6 +23,28 @@ Describe 'SSH configuration parsing' {
     It 'refuses network paths without reading them' {
         (Read-PS7SshConfig '\\server\share\config').Hosts.Count | Should -Be 0
     }
+    It 'reads hosts through a local directory junction and tracks target edits' {
+        $target = New-Item -ItemType Directory -Path (Join-Path $TestDrive 'dotfiles')
+        $config = Join-Path $target.FullName 'config'
+        Set-Content $config 'Host strawberryvps strawberryvps-root'
+        $link = Join-Path $TestDrive 'ssh-link'
+        New-Item -ItemType Junction -Path $link -Target $target.FullName | Out-Null
+        try {
+            $result = Read-PS7SshConfig (Join-Path $link 'config')
+            $result.Hosts | Should -Be @('strawberryvps','strawberryvps-root')
+            $result.Dependencies.Path | Should -Contain $link
+            Set-Content $config 'Host updated'
+            (Read-PS7SshConfig (Join-Path $link 'config')).Hosts | Should -Be @('updated')
+        } finally { [IO.Directory]::Delete($link) }
+    }
+    It 'reads a finite path through a junction pointing to its parent' {
+        $target = New-Item -ItemType Directory -Path (Join-Path $TestDrive 'cycle')
+        $link = Join-Path $target.FullName 'again'
+        New-Item -ItemType Junction -Path $link -Target $target.FullName | Out-Null
+        Set-Content (Join-Path $target.FullName 'config') 'Host once'
+        try { (Read-PS7SshConfig (Join-Path $link 'config')).Hosts | Should -Be @('once') }
+        finally { [IO.Directory]::Delete($link) }
+    }
     It 'rejects oversized configs' {
         $path = Join-Path $TestDrive 'large'
         [IO.File]::WriteAllText($path, ('x' * 1048577))
@@ -43,3 +65,5 @@ Describe 'SSH argument contexts' {
         }
     }
 }
+
+

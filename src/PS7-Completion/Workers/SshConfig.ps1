@@ -8,14 +8,26 @@ function Read-PS7SshConfig {
         Bytes = 0L
     }
     $sshRoot = Join-Path ([Environment]::GetFolderPath('UserProfile')) '.ssh'
-    function Test-LocalPath([string] $Candidate) {
+    function Test-LocalPath([string] $Candidate, [int] $LinkDepth = 0) {
+        if ($LinkDepth -ge 32) { return $false }
         if ($Candidate.StartsWith('\\') -or $Candidate.StartsWith('//')) { return $false }
         $full = [IO.Path]::GetFullPath($Candidate)
         if ([IO.DriveInfo]::new([IO.Path]::GetPathRoot($full)).DriveType -ne 'Fixed') { return $false }
-        # Do not traverse symlinks/junctions into an unbounded or remote tree.
-        for ($part = $full; $part; $part = [IO.Path]::GetDirectoryName($part)) {
+        # Inspect parents first so a link to a network share is rejected before
+        # asking the filesystem for any of its children.
+        $parts = [Collections.Generic.Stack[string]]::new()
+        for ($part = $full; $part; $part = [IO.Path]::GetDirectoryName($part)) { $parts.Push($part) }
+        foreach ($part in $parts) {
             $item = Get-Item -LiteralPath $part -Force -ErrorAction Ignore
-            if ($item -and ($item.Attributes -band [IO.FileAttributes]::ReparsePoint)) { return $false }
+            if ($item -and ($item.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+                $target = $item.LinkTarget
+                if (-not $target) { return $false }
+                if (-not [IO.Path]::IsPathRooted($target)) {
+                    $target = [IO.Path]::GetFullPath($target, [IO.Path]::GetDirectoryName($part))
+                }
+                if (-not (Test-LocalPath $target ($LinkDepth + 1))) { return $false }
+                Add-Dependency $part
+            }
         }
         return $true
     }
