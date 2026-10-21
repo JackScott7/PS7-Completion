@@ -4,6 +4,11 @@ Reviewed 2026-10-22 against `docs/specification.md`, README, runtime framework,
 registry, tests, build/test scripts, installer, WinGet template and release workflow.
 This is a requirements and implementation-plan review, not runtime certification.
 
+Implementation update: the owner subsequently authorized a four-command API for
+user providers and a private installable MVP. Public WinGet publication is deferred.
+This document preserves the original roadmap review; [MVP status](mvp-status.md)
+contains the current test/installer evidence and remaining limitations.
+
 ## Specification coverage
 
 | Specification requirement | Roadmap owner | Acceptance evidence |

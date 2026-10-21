@@ -1,8 +1,15 @@
 # PS7-Completion roadmap
 
 Validated against [the specification](specification.md) and the current scaffold
-on 2026-10-22. All milestone checkboxes below represent **unfinished release
-work**, not claims that the scaffold already implements them.
+on 2026-10-22. Updated after implementation: checked items have local/CI evidence
+in [MVP status](mvp-status.md). Unchecked broad release items still contain pending
+work; they are not all blockers for the owner-approved private-MVP delivery.
+
+Scope amendment: the owner requested user-registerable providers, MIT licensing,
+small commits pushed to the private upstream, and a tested installable MVP while
+keeping the repository private. The API therefore has four public commands,
+including Register-PS7CompletionProvider and New-PS7CompletionResult. Public WinGet
+publication is deferred; no visibility change or public package submission is planned.
 
 ## Milestones and branch strategy
 
@@ -18,8 +25,8 @@ components: v0.10 follows v0.5; it is not another spelling of v0.1.
 | `release/0.10` | Feature freeze, migration validation, release candidates | v0.5 acceptance |
 | `release/1.0` | Stable public/provider contracts and support process | v0.10 acceptance |
 
-These are planned Git branches; this directory currently has no Git repository.
-Initialize Git when implementation begins. Develop each milestone on short-lived
+These are planned release branches; Git is initialized with `main` tracking
+`upstream/main` at the owner-provided repository. Develop each milestone on short-lived
 feature branches merged into `main`, then cut its release branch for stabilization.
 Do not create four diverging implementations. Fixes made during stabilization must
 also reach `main`; tag accepted releases `v0.1.0`, `v0.5.0`, `v0.10.0`, and `v1.0.0`.
@@ -32,15 +39,10 @@ and additional providers do not block these four milestones.
 
 ## Current baseline
 
-The scaffold supplies a manifest, registry, lazy callbacks, AST-derived context,
-two exported commands, static vocabularies, example Pester tests, module archive
-build, installer definition, manifest template, and CI/draft-release definitions.
-It does not yet supply context-sensitive provider behavior, dynamic queries,
-quoting, timeout execution, TTL cache entries, or validated installer lifecycle.
-
-Existing tests check selected scaffold behaviors, not full release acceptance.
-This roadmap review inspected their source; it did not rerun tests or establish
-performance, installation, publication, or interactive shell results.
+The framework supplies validated lazy callbacks, AST context, four public commands,
+custom providers, context-sensitive built-in providers, literal quoting, isolated
+queries, TTL caching, versioned builds and installer lifecycle CI. Test and measurement
+results, specific limitations and the private-delivery boundary are in MVP status.
 
 ## Branch `release/0.1` — achieve the MVP
 
@@ -49,15 +51,15 @@ performance, installation, publication, or interactive shell results.
 - [ ] Preserve Windows, PowerShell 7.4+ Core, pure PowerShell runtime and x64
   installer scope. Verify minimum and selected current supported PowerShell
   versions; record exact OS/tool versions in the test evidence.
-- [ ] Validate registry IDs, executable lists and provider paths before registering
+- [x] Validate registry IDs, executable lists and provider paths before registering
   any callback. Resolve paths inside the module; reject missing/invalid entries.
   Register bare and `.exe` forms except `services`, which registers only `sc.exe`.
-- [ ] Keep import free of external processes, network access and system-data
+- [x] Keep import free of external processes, network access and system-data
   enumeration. Load each provider once on first request and validate its contract.
-- [ ] Validate the configuration shape, supported keys and Exclude values. Unknown
-  IDs must fail before registration. Preserve only the two specified public commands
+- [x] Validate the configuration shape, supported keys and Exclude values. Unknown
+  IDs must fail before registration. Export the four amended public commands
   and all provider metadata fields: Name, Commands, Enabled, Loaded, Status.
-- [ ] Define truthful Status values for enabled, excluded, loaded and failed states.
+- [x] Define truthful Status values for enabled, excluded, loaded and failed states.
   Document first-import exclusions, restart behavior, import-order collisions and
   the absence of automatic restoration/detection of other completers.
 
@@ -67,20 +69,20 @@ An Enabled=false metadata assertion alone does not prove registration was skippe
 
 ### M2. Context, matching and result safety
 
-- [ ] Complete the five-field context contract: raw WordToComplete, original
+- [x] Complete the five-field context contract (plus additive literal helpers): raw WordToComplete, original
   CommandAst, absolute CursorPosition, source-preserving Arguments excluding the
   executable, and zero-based ArgumentIndex. Ignore later arguments and truncate
   the current argument at the cursor; trailing whitespace selects the next slot.
-- [ ] Handle empty/incomplete input, quoted command paths, invocation operator,
+- [x] Handle empty/incomplete input, quoted command paths, invocation operator,
   quoted/escaped words, cursor edits, pipelines and redirection boundaries without
   evaluating expressions. Unsupported expression forms return no provider results.
-- [ ] Use ordinal case-insensitive literal prefix matching; deduplicate candidates
+- [x] Use ordinal case-insensitive literal prefix matching; deduplicate candidates
   and provide deterministic ordering, meaningful list text and tooltips.
-- [ ] Add literal extraction and insertion helpers. Quote/escape dynamic names
+- [x] Add literal extraction and insertion helpers. Quote/escape dynamic names
   correctly for the actual replacement span, including spaces, apostrophes,
   backticks and metacharacters. Do not double-quote existing quoted tokens.
   Round-trip completion text through the parser in tests without executing it.
-- [ ] Buffer provider output, validate every result type and discard invalid or
+- [x] Buffer provider output, validate every result type and discard invalid or
   partial results on failure. Capture non-terminating errors and unwanted output
   streams as well as thrown errors; normal completion must stay silent, with
   diagnostic detail available only through debug output.
@@ -90,22 +92,24 @@ under `Private/`; preserve the documented external provider context.
 
 ### M3. Bounded read-only data and caching
 
-- [ ] Implement a shared query runner with a **500 ms wall-clock query deadline**,
+- [x] Implement a shared query runner with a **500 ms wall-clock query work deadline**,
   cancellation and disposal. An abandoned background job/runspace is not a timeout
   implementation. Bound the aggregate dynamic-query work per completion request
-  to the same budget; do not allow sequential queries to multiply the wait.
-- [ ] Use local PowerShell/Windows read-only data access for tasks, services and
+  to the same budget; do not allow sequential queries to multiply the wait. OS
+  termination/disposal adds latency after the deadline; arbitrary custom callbacks
+  are trusted in-session code and do not run inside this private query runner.
+- [x] Use local PowerShell/Windows read-only data access for tasks, services and
   processes. Do not launch `ssh`, `winget`, `schtasks`, `sc.exe`, or `taskkill` from
   their completers, and never execute a command assembled from user input.
-- [ ] Add **30-second TTL** cache entries keyed by provider, normalized query
+- [x] Add **30-second TTL** cache entries keyed by provider, normalized query
   parameters and relevant file metadata. Use a monotonic clock for TTL; bound cache
   size, invalidate changed SSH inputs, and do not persist sensitive host/process data.
-- [ ] Treat unavailable dependencies, denied access, malformed data and timeout as
+- [x] Treat unavailable dependencies, denied access, malformed data and timeout as
   empty results with optional debug detail. Cache successful empty results; do not
   cache a failure as success or return expired data without an explicit future policy.
-- [ ] Make Clear-PS7CompletionCache clear data only, without unloading providers or
+- [x] Make Clear-PS7CompletionCache clear data only, without unloading providers or
   unregistering callbacks. Prevent in-flight queries from repopulating cleared data.
-- [ ] Test the clock, cache-key separation, file changes, timeout cleanup, repeated
+- [x] Test the clock, cache-key separation, file changes, timeout cleanup, repeated
   failures, cache limits and explicit clearing with fixtures/mocks.
 
 Implement M2 and M3 before enabling any dynamic provider path.
@@ -215,7 +219,7 @@ may be reclassified as a v0.5 enhancement merely to close the milestone.
   reject placeholder/hash/version mismatches before submission.
 - [ ] **F6: Improve contributor feedback.** Add provider contract checks, per-provider
   coverage reports and a documented debugging recipe that does not emit private
-  data by default. Keep the public API at the two specified commands.
+  data by default. Preserve the amended four-command public API.
 
 Implementation areas: provider metadata/helpers, fixture matrix, isolated-process
 tests, packaging validation scripts and CI. **Exit:** all MVP gates plus fixtures

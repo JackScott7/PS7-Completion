@@ -1,18 +1,21 @@
 # PS7-Completion specification
 
-Status: proposed v0.1 contract; repository currently contains a starter scaffold.
+Status: v0.1 private MVP contract, amended 2026-10-22 to support user-registered
+completion code. See [implementation evidence](mvp-status.md).
 
 ## Product and scope
 
 PS7-Completion is a pure PowerShell module providing native executable argument
 completion on Windows with PowerShell 7.4 or later (Core edition). The initial
 installer targets x64 Windows. ARM64 packaging and Windows PowerShell 5.1 are out
-of scope. WinGet is the recommended future distribution channel; no package is
-currently published. PowerShell Gallery distribution is deferred.
+of scope. The owner has requested that the repository stay private and that this
+delivery stop at a tested installable MVP. Public WinGet publication is therefore
+deferred, as is PowerShell Gallery distribution.
 
 Project, module, and release artifact names use `PS7-Completion`. The proposed
-WinGet identifier is `JackScott7.PS7-Completion`; publisher ownership and package
-availability must be confirmed before publication.
+WinGet identifier is `JackScott7.PS7-Completion`; package availability must be
+confirmed before any future public publication. Repository/publisher:
+https://github.com/JackScott7/PS7-Completion (JackScott7). License: MIT.
 
 ## Layout
 
@@ -48,6 +51,9 @@ Providers receive one context object:
 | `CursorPosition` | Absolute cursor offset |
 | `Arguments` | Argument source text through the cursor, excluding executable; quoted boundaries preserved |
 | `ArgumentIndex` | Zero-based argument position; next position after trailing whitespace |
+| `Values` | Decoded literal arguments; no expression evaluation |
+| `PreviousArguments` | Decoded arguments strictly before the current slot |
+| `IsSupported` | False for expression contexts the framework cannot interpret safely |
 
 Use AST extents, never whitespace splitting or Invoke-Expression. Ignore arguments
 after the cursor; truncate the current argument at the cursor. Preserve source
@@ -60,7 +66,10 @@ Provider failure must not break interactive completion: return no results and
 write diagnostic detail only to the debug stream. No provider may execute the
 command being completed or perform mutating operations. Dynamic queries must be
 local, read-only, bounded, and tolerate unavailable commands and access denial.
-Before dynamic queries ship, implement a 500 ms timeout and a 30-second cache TTL.
+Bundled dynamic queries use a 500 ms shared work deadline and a 30-second cache TTL.
+The worker is terminated and reaped on timeout; OS termination/disposal latency is
+additional to the work budget. Custom providers are trusted in-session code, not
+sandboxed or forcibly time-limited; their authors own query behavior and latency.
 Cache keys must include provider, query parameters, and relevant file metadata.
 
 ## Public interface and configuration
@@ -68,6 +77,14 @@ Cache keys must include provider, query parameters, and relevant file metadata.
 * `Get-PS7CompletionProvider`: list Name, Commands, Enabled, Loaded, and Status.
 * `Clear-PS7CompletionCache`: clear provider data caches; it does not unregister
   callbacks or unload provider implementations.
+* `Register-PS7CompletionProvider -Name <id> -CommandName <names> -ScriptBlock <code>`:
+  register user completion code without modifying the module. Alternatively use
+  `-Path <file.ps1>` for lazy loading of a file returning one scriptblock. `-Force`
+  replaces an existing ID only with the same executable names. Conflicting enabled
+  providers and alias names are rejected; registrations last for the shell session.
+* `New-PS7CompletionResult -Candidate <strings> -WordToComplete <prefix>`: create
+  prefix-filtered, safely quoted results. Optional ToolTip and ResultType parameters
+  control presentation. Direct CompletionResult output remains supported.
 * `Import-Module PS7-Completion -ArgumentList @{ Exclude = @('ssh', 'winget') }`:
   skip registration for those provider IDs. Unknown IDs are errors.
 
@@ -86,9 +103,12 @@ not guarantee restoration. Configuration is never written to profiles automatica
 | sc.exe | Operations and local service names in applicable positions |
 | taskkill | Options, local process names after /IM and process IDs after /PID; never terminate processes |
 
-The scaffold implements static vocabulary suggestions only. Context-sensitive
-options, dynamic data, safe quoting helpers, timeouts and TTL caches remain release
-work. Static suggestions must not be described as complete tool support.
+Context-sensitive options, local dynamic data, safe literal formatting and bounded
+query caching are implemented. [Provider support](providers.md) documents the exact
+subset and unsupported syntax; no provider claims exhaustive native CLI coverage.
+Get-PS7CompletionProvider additionally reports Source (BuiltIn or Custom) and Status
+(Registered, Loaded, Excluded or Failed). Output limits are 512 suggestions per
+request, 4096 query values and 128 cache entries. See authoring docs for SSH limits.
 
 ## Distribution and lifecycle
 
@@ -125,11 +145,12 @@ services/tasks. Check import cost and completion latency before release; target
 warm static completion under 50 ms and cold import under 100 ms on a documented
 Windows reference machine (report measurements, not an unverified guarantee).
 
-Before v0.1 publication: finish provider acceptance scope; choose a license and
-publisher identity; confirm name/ID availability; validate installer on a clean
+Before future public publication: confirm name/ID availability; validate installer on a clean
 VM for elevated silent install, upgrade, uninstall, retained versions and restart
 behavior; verify package discovery in PowerShell 7; validate WinGet manifests;
-decide signing and publish checksums. Draft release automation is not acceptance.
+decide public signing policy and publish checksums. Current private development
+installers are explicitly unsigned. Draft release automation is not acceptance.
+The private-MVP scope defers public package submission, not implementation tests.
 
 ## References
 
