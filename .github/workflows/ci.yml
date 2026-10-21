@@ -5,6 +5,10 @@ permissions:
 jobs:
   validate:
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        powershell: [current, minimum]
     defaults:
       run:
         shell: pwsh
@@ -14,7 +18,21 @@ jobs:
         run: |
           Install-Module Pester -RequiredVersion 5.7.1 -Force -Scope CurrentUser
           Install-Module PSScriptAnalyzer -RequiredVersion 1.24.0 -Force -Scope CurrentUser
-      - run: ./scripts/Test.ps1
+      - name: Prepare minimum supported PowerShell
+        if: matrix.powershell == 'minimum'
+        run: |
+          $base = 'https://github.com/PowerShell/PowerShell/releases/download/v7.4.0'
+          $archive = Join-Path $env:RUNNER_TEMP 'PowerShell-7.4.0-win-x64.zip'
+          Invoke-WebRequest "$base/PowerShell-7.4.0-win-x64.zip" -OutFile $archive
+          $hashText = (Invoke-WebRequest "$base/hashes.sha256").Content
+          $line = ($hashText -split "`n" | Where-Object { $_ -match 'PowerShell-7.4.0-win-x64.zip$' })
+          if (-not $line -or (Get-FileHash $archive).Hash -ne ($line -split '\s+')[0]) { throw 'PowerShell archive checksum mismatch.' }
+          Expand-Archive $archive (Join-Path $env:RUNNER_TEMP 'pwsh74')
+      - name: Test selected PowerShell
+        run: |
+          $engine = if ('${{ matrix.powershell }}' -eq 'minimum') { Join-Path $env:RUNNER_TEMP 'pwsh74/pwsh.exe' } else { (Get-Command pwsh).Source }
+          & $engine -NoProfile -File ./scripts/Test.ps1
+          if ($LASTEXITCODE -ne 0) { throw 'Test suite failed.' }
       - run: ./scripts/Build.ps1
   installer:
     runs-on: windows-latest
