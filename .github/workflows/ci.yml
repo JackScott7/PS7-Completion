@@ -16,3 +16,27 @@ jobs:
           Install-Module PSScriptAnalyzer -RequiredVersion 1.24.0 -Force -Scope CurrentUser
       - run: ./scripts/Test.ps1
       - run: ./scripts/Build.ps1
+  installer:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+      - name: Locate or install Inno Setup
+        run: |
+          $compiler = 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
+          if (-not (Test-Path $compiler)) {
+            choco install innosetup --version=6.4.3 --yes --no-progress
+            if ($LASTEXITCODE -ne 0) { throw 'Inno Setup installation failed.' }
+          }
+          Split-Path $compiler | Out-File $env:GITHUB_PATH -Append
+      - run: ./scripts/Test-Installer.ps1 -DisposableRunner
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: installer-evidence
+          path: |
+            dist/installer-evidence/
+            dist/builds/**/*.exe
+            dist/builds/**/SHA256SUMS.txt
