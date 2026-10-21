@@ -31,6 +31,10 @@ Describe 'Context and insertion boundaries' {
     It 'quotes leading at signs rather than creating splat expressions' {
         (New-PS7CompletionResult -Candidate '@value').CompletionText | Should -Be "'@value'"
     }
+    It 'parses escaped spaces and literal escaped dollar signs without evaluation' {
+        (New-PS7CompletionResult -Candidate 'two words' -WordToComplete 'two` wo').CompletionText | Should -Be "'two words'"
+        (New-PS7CompletionResult -Candidate '$literal' -WordToComplete '"`$lit').CompletionText | Should -Be "'`$literal'"
+    }
     It 'really skips excluded registrations and validates all settings first' {
         $manifest = (Get-Module PS7-Completion).Path.Replace('.psm1','.psd1')
         $code = @'

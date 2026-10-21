@@ -35,9 +35,10 @@ function Register-PS7CompletionProvider {
     }
     $resolved = $null
     if ($PSCmdlet.ParameterSetName -eq 'Path') {
-        $item = Get-Item -LiteralPath $Path -ErrorAction Stop
-        if ($item.PSIsContainer -or $item.Extension -ne '.ps1' -or $item.PSProvider.Name -ne 'FileSystem') { throw 'Path must be a .ps1 file.' }
-        $resolved = $item.FullName
+        $provider = $null
+        $drive = $null
+        $resolved = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Path, [ref]$provider, [ref]$drive)
+        if ($provider.Name -ne 'FileSystem' -or [IO.Path]::GetExtension($resolved) -ne '.ps1' -or -not [IO.File]::Exists($resolved)) { throw 'Path must be an existing .ps1 file.' }
     }
     $callback = $ExecutionContext.InvokeCommand.NewScriptBlock(@"
 param(`$wordToComplete, `$commandAst, `$cursorPosition)

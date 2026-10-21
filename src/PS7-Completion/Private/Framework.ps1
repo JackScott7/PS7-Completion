@@ -38,19 +38,25 @@ function New-PS7CompletionContext {
 
 function ConvertFrom-PS7Literal {
     param([AllowEmptyString()][string] $Text)
-    if ($Text.StartsWith("'")) {
-        $value = $Text.Substring(1)
-        if ($value.EndsWith("'")) { $value = $value.Substring(0, $value.Length - 1) }
-        return $value.Replace("''", "'")
+    if (-not $Text) { return '' }
+    $tokens = $null
+    $errors = $null
+    $ast = [Management.Automation.Language.Parser]::ParseInput("ps7literal $Text", [ref]$tokens, [ref]$errors)
+    foreach ($errorRecord in $errors) {
+        if ($errorRecord.ErrorId -ne 'TerminatorExpectedAtEndOfString') { throw 'Unsupported incomplete argument.' }
     }
-    if ($Text.StartsWith('"')) {
-        $value = $Text.Substring(1)
-        if ($value.EndsWith('"')) { $value = $value.Substring(0, $value.Length - 1) }
-        if ($value.Contains('$') -or $value.Contains('`')) { throw 'Expandable arguments are unsupported.' }
-        return $value
-    }
-    if ($Text -match '[$`{}();|&<>]') { throw 'Expression arguments are unsupported.' }
-    return $Text
+    if ($ast.EndBlock.Statements.Count -ne 1 -or $ast.EndBlock.Statements[0] -isnot [Management.Automation.Language.PipelineAst]) { throw 'Expression arguments are unsupported.' }
+    $pipeline = $ast.EndBlock.Statements[0]
+    if ($pipeline.PipelineElements.Count -ne 1) { throw 'Expression arguments are unsupported.' }
+    $command = $pipeline.PipelineElements[0]
+    if ($command -isnot [Management.Automation.Language.CommandAst] -or $command.CommandElements.Count -ne 2 -or $command.Redirections.Count) { throw 'Expression arguments are unsupported.' }
+    $argument = $command.CommandElements[1]
+    if ($argument -is [Management.Automation.Language.StringConstantExpressionAst]) { return $argument.Value }
+    if ($argument -is [Management.Automation.Language.ConstantExpressionAst]) { return $argument.Extent.Text }
+    # Parameter names are already parsed literal tokens; colon arguments require
+    # a separate grammar and are deliberately not evaluated here.
+    if ($argument -is [Management.Automation.Language.CommandParameterAst] -and $null -eq $argument.Argument) { return $argument.Extent.Text }
+    throw 'Expression arguments are unsupported.'
 }
 
 function New-PS7StaticCompletion {
@@ -94,10 +100,12 @@ function Assert-PS7ProviderDefinition {
     if ($Name -notmatch '^[a-zA-Z][a-zA-Z0-9_-]{0,63}$') { throw 'Provider names must be simple identifiers (up to 64 characters).' }
     if (-not $CommandName.Count) { throw 'At least one executable name is required.' }
     $seen = @{}
+    $aliases = @{}
+    foreach ($alias in $ExecutionContext.SessionState.InvokeCommand.GetCommands('*', [Management.Automation.CommandTypes]::Alias, $true)) { $aliases[$alias.Name] = $true }
     foreach ($command in $CommandName) {
         if ($command -notmatch '^[a-zA-Z0-9][a-zA-Z0-9_.-]*$') { throw "Invalid executable name: $command" }
         if ($seen.ContainsKey($command)) { throw "Duplicate executable: $command" }
         $seen[$command] = $true
-        if (Get-Alias -Name $command -ErrorAction Ignore) { throw "Executable name '$command' is a PowerShell alias. Use its .exe name." }
+        if ($aliases.ContainsKey($command)) { throw "Executable name '$command' is a PowerShell alias. Use its .exe name." }
     }
 }
