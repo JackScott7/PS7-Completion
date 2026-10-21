@@ -36,3 +36,24 @@ and [FastAPI CLI](https://fastapi.tiangolo.com/fastapi-cli/).
 Local installed help was also checked for uv optional arguments, Flask route
 sorting, Tailscale ping options, and FastAPI run options. No provider invokes
 these help/version/WinGet queries during module import or completion.
+
+## Additional providers in 0.1.2
+
+Checked on 2026-10-22 using the same WinGet inventory and executable lookup.
+WinGet has no installed-package records matching uvx, Uvicorn, Twine, or Ruff.
+All four executables resolve from the Python 3.14 Scripts directory; their local
+help/version output establishes the CLI variant, not the original download URL.
+
+| Provider | Local identity |
+| --- | --- |
+| ping | Windows System32 PING.EXE, provided by Windows itself; no separate WinGet package. Flags checked with `ping /?`. |
+| uvx | uvx 0.10.0; tool-run entry point from the same uv installation. |
+| uvicorn | Uvicorn 0.46.0, reports CPython 3.14.3 on Windows. |
+| twine | Twine 6.2.0; check/upload/register help verified locally. |
+| ruff | Ruff 0.16.10; root/check/format/rule help verified locally. |
+
+References: [Windows ping](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/ping),
+[uv tools](https://docs.astral.sh/uv/guides/tools/),
+[Uvicorn settings](https://uvicorn.dev/settings/),
+[Twine](https://twine.readthedocs.io/en/stable/),
+[Ruff](https://docs.astral.sh/ruff/).

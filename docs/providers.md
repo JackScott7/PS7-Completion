@@ -1,4 +1,4 @@
-# Bundled provider support in v0.1
+# Bundled provider support in v0.1.2
 
 Providers support the explicit subsets below, not every native CLI feature. They
 never execute the command being completed. Unknown options conservatively suppress
@@ -15,9 +15,15 @@ arguments, with alphabetical ordering within each group across all providers.
 | sc.exe (provider ID `services`) | `query queryex start stop qc config create delete description`; existing internal service names in applicable positions; `key= value` syntax for query/config/create with finite type/state/start/error/tag values. Creation names, binary paths and descriptions remain free text. |
 | taskkill / taskkill.exe | `/PID /IM /FI /F /T /? /S /U /P`; local PID/image values after their respective selectors, including repeated selectors. Filter expressions and credentials remain free text. |
 
+Windows `ping` / `ping.exe` is also bundled (provider ID `ping`). It supports
+`-t -a -f -R -p -4 -6 /?`, and consumes values for
+`-n -l -i -v -r -s -j -k -w -S -c`. Targets remain free text; completion never
+sends packets or resolves hosts. Windows `-r` requires a count; `-R` is a flag.
+This provider does not implement Linux/WSL ping syntax.
+
 ## Developer tools
 
-The following 17 providers use literal syntax tables, with no native process,
+The following 21 providers use literal syntax tables, with no native process,
 network request, project import, repository scan, or package discovery during
 completion. Each supports the bare command and `.exe` spelling, except npm,
 which supports `npm`, `npm.cmd`, and `npm.ps1`. Python and pip also support
@@ -32,6 +38,10 @@ which supports `npm`, `npm.cmd`, and `npm.ps1`. Python and pip also support
 | python | Interpreter flags and module names after `-m`; delegates literal `python [-I etc.] -m pip` to pip. Stops at scripts, inline code, and other module bodies. |
 | pip | install, uninstall, list, freeze, show, check, download, cache dir/info/list/purge/remove; list format values. No package enumeration. |
 | uv | init, add, remove, sync, lock, run, venv; python list/install/find/pin/uninstall; tool run/install/list/uninstall/upgrade; pip install/list/freeze/uninstall/check/compile/sync. |
+| uvx | Tool-run options including from/with/python, index/cache/config operands and color values. Stops after the tool name; no tool discovery, installation, or forwarded-tool completion. |
+| uvicorn | Server options before/after the app import string; host/port/reload/workers/TLS operands and loop/http/ws/lifespan/interface/log-level values. No app import. |
+| twine | check, upload, register; strict checks, upload flags and repository/credential/certificate operands. No credential reads, package inspection, or upload. |
+| ruff | check, format, rule, config, linter, clean, server, version; common global options, rule/path/config operands and output-format/target-version/color values. No project reads or lint execution. |
 | flask | Root app/env-file/debug options; run, routes, shell; routes sort values. No application imports or custom command discovery. |
 | fastapi | dev and run, host/port/app/entrypoint/root-path operands, reload flags, run workers. |
 | tailscale | up, down, status, ip, ping, version, logout, set; common flags and operands. No peer discovery. |

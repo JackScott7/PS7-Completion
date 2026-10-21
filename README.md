@@ -1,9 +1,20 @@
 # PS7-Completion
 
-Native command completion for Windows and PowerShell 7.4+. The v0.1 framework
-supports custom providers and 22 bundled providers, including Git, GitHub CLI,
-ripgrep, Python/pip, uv, Node/npm, Rust, and the original Windows tools. It parses
-argument context, quotes completion values, and loads provider files only when needed.
+Native command completion for Windows and PowerShell 7.4+. Version **0.1.2**
+supports custom providers and 27 bundled providers. It parses argument context,
+quotes completion values, and loads provider files only when needed.
+
+| Category | Included commands |
+| --- | --- |
+| Windows and remote access | `ping`, `ssh`, `winget`, `schtasks`, `sc.exe`, `taskkill` |
+| Source control and search | `git`, `gh`, `rg`, `jq` |
+| Python | `python`, `pip`, `uv`, `uvx`, `uvicorn`, `twine`, `ruff`, `flask`, `fastapi` |
+| JavaScript and Rust | `node`, `npm`, `rustc`, `rustup` |
+| Other tools | `tailscale`, `sqlite3`, `ffmpeg`, `nano` |
+
+Completion menus put commands first, then options/arguments, alphabetically within
+each group. Providers offer documented syntax subsets without executing the tool
+being completed. See [0.1.2 release notes](docs/releases/v0.1.2.md).
 
 This repository remains private. WinGet publication is deferred by project-owner
 decision; do not run the planned WinGet install command expecting a public package.

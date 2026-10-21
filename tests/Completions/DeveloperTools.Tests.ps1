@@ -31,6 +31,21 @@ Describe 'Developer tool provider integration' {
         @{ Line='rustc --edition 202'; Expected='2024' }
         @{ Line='rustup toolchain i'; Expected='install' }
         @{ Line='nano --line'; Expected='--linenumbers' }
+        @{ Line='ping -'; Expected='-n' }
+        @{ Line='ping.exe -R -'; Expected='-S' }
+        @{ Line='ping -n 3 localhost -'; Expected='-w' }
+        @{ Line='uvx --fr'; Expected='--from' }
+        @{ Line='uvx.exe --from ruff --col'; Expected='--color' }
+        @{ Line='uvx --color a'; Expected='auto' }
+        @{ Line='uvicorn main:app --po'; Expected='--port' }
+        @{ Line='uvicorn.exe --log-level d'; Expected='debug' }
+        @{ Line='twine ch'; Expected='check' }
+        @{ Line='twine.exe upload --rep'; Expected='--repository' }
+        @{ Line='twine check dist/pkg.whl --st'; Expected='--strict' }
+        @{ Line='ruff ch'; Expected='check' }
+        @{ Line='ruff.exe check --output-format j'; Expected='json' }
+        @{ Line='ruff format --target-version py31'; Expected='py314' }
+        @{ Line='ruff --config ruff.toml check --fix --col'; Expected='--color' }
     ) {
         $result = [Management.Automation.CommandCompletion]::CompleteInput($Line, $Line.Length, $null)
         $result.CompletionMatches.CompletionText | Should -Contain $Expected
@@ -69,6 +84,20 @@ Describe 'Developer tool provider integration' {
             @{ Name='rustc'; Line='rustc -o ' }
             @{ Name='rustup'; Line='rustup run stable rustc ' }
             @{ Name='nano'; Line='nano --syntax ' }
+            @{ Name='ping'; Line='ping -n ' }
+            @{ Name='ping'; Line='ping -r ' }
+            @{ Name='ping'; Line='ping -S ' }
+            @{ Name='ping'; Line='ping --linux-only ' }
+            @{ Name='uvx'; Line='uvx --from ' }
+            @{ Name='uvx'; Line='uvx ruff ' }
+            @{ Name='uvx'; Line='uvx --from ruff ruff check ' }
+            @{ Name='uvicorn'; Line='uvicorn main:app --port ' }
+            @{ Name='uvicorn'; Line='uvicorn --app-dir ' }
+            @{ Name='twine'; Line='twine upload --password ' }
+            @{ Name='twine'; Line='twine check --repository ' }
+            @{ Name='ruff'; Line='ruff check --select ' }
+            @{ Name='ruff'; Line='ruff format --fix ' }
+            @{ Name='ruff'; Line='ruff check --config ' }
         ) {
             $tokens = $null; $errors = $null
             $ast = [Management.Automation.Language.Parser]::ParseInput($Line, [ref]$tokens, [ref]$errors)

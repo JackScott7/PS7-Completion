@@ -17,6 +17,8 @@ Describe 'Native static provider integration' {
         @{ Line = 'uv tool ' }
         @{ Line = 'gh pr ' }
         @{ Line = 'rustup toolchain ' }
+        @{ Line = 'ruff ' }
+        @{ Line = 'twine ' }
     ) {
         $result = [System.Management.Automation.CommandCompletion]::CompleteInput($Line, $Line.Length, $null)
         $matches = @($result.CompletionMatches)

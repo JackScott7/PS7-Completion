@@ -21,4 +21,9 @@
     rustc = @{ Commands = @('rustc', 'rustc.exe'); File = 'Completions/rustc.ps1' }
     rustup = @{ Commands = @('rustup', 'rustup.exe'); File = 'Completions/rustup.ps1' }
     nano = @{ Commands = @('nano', 'nano.exe'); File = 'Completions/nano.ps1' }
+    ping = @{ Commands = @('ping', 'ping.exe'); File = 'Completions/ping.ps1' }
+    uvx = @{ Commands = @('uvx', 'uvx.exe'); File = 'Completions/uvx.ps1' }
+    uvicorn = @{ Commands = @('uvicorn', 'uvicorn.exe'); File = 'Completions/uvicorn.ps1' }
+    twine = @{ Commands = @('twine', 'twine.exe'); File = 'Completions/twine.ps1' }
+    ruff = @{ Commands = @('ruff', 'ruff.exe'); File = 'Completions/ruff.ps1' }
 }
