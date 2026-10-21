@@ -33,7 +33,7 @@ if ($builtins -isnot [hashtable]) { throw 'Registry must be a data hashtable.' }
 $commands = @{}
 foreach ($name in $builtins.Keys) {
     $entry = $builtins[$name]
-    Assert-PS7ProviderDefinition -Name $name -CommandName $entry.Commands
+    Assert-PS7ProviderDefinition -Name $name -CommandName $entry.Commands -SkipAliasCheck:($name -in $script:Excluded)
     $path = [IO.Path]::GetFullPath([IO.Path]::Combine($PSScriptRoot, $entry.File))
     if (-not $path.StartsWith($PSScriptRoot + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase) -or
         -not [IO.File]::Exists($path) -or [IO.Path]::GetExtension($path) -ne '.ps1') { throw "Invalid provider path: $name" }

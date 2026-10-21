@@ -43,6 +43,10 @@ Register-ArgumentCompleter -Native -CommandName ssh -ScriptBlock { [Management.A
 Import-Module $manifest -ArgumentList @{ Exclude = @('ssh') }
 $result = [Management.Automation.CommandCompletion]::CompleteInput('ssh se',6,$null)
 if ('sentinel' -notin $result.CompletionMatches.CompletionText) { exit 1 }
+Remove-Module PS7-Completion
+Set-Alias -Name ssh -Value Get-Date
+Import-Module $manifest -ArgumentList @{ Exclude = @('ssh') } -ErrorAction Stop
+if ((Get-Alias ssh).Definition -ne 'Get-Date') { exit 2 }
 '@
         $file = Join-Path $TestDrive 'exclude.ps1'
         Set-Content $file $code

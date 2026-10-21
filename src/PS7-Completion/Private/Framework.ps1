@@ -96,12 +96,14 @@ function Invoke-PS7Provider {
 }
 
 function Assert-PS7ProviderDefinition {
-    param([string] $Name, [string[]] $CommandName)
+    param([string] $Name, [string[]] $CommandName, [switch] $SkipAliasCheck)
     if ($Name -notmatch '^[a-zA-Z][a-zA-Z0-9_-]{0,63}$') { throw 'Provider names must be simple identifiers (up to 64 characters).' }
     if (-not $CommandName.Count) { throw 'At least one executable name is required.' }
     $seen = @{}
     $aliases = @{}
-    foreach ($alias in $ExecutionContext.SessionState.InvokeCommand.GetCommands('*', [Management.Automation.CommandTypes]::Alias, $true)) { $aliases[$alias.Name] = $true }
+    if (-not $SkipAliasCheck) {
+        foreach ($alias in $ExecutionContext.SessionState.InvokeCommand.GetCommands('*', [Management.Automation.CommandTypes]::Alias, $true)) { $aliases[$alias.Name] = $true }
+    }
     foreach ($command in $CommandName) {
         if ($command -notmatch '^[a-zA-Z0-9][a-zA-Z0-9_.-]*$') { throw "Invalid executable name: $command" }
         if ($seen.ContainsKey($command)) { throw "Duplicate executable: $command" }
