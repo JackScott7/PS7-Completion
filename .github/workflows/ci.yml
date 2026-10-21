@@ -32,7 +32,13 @@ jobs:
       - name: Test selected PowerShell
         run: |
           $engine = if ('${{ matrix.powershell }}' -eq 'minimum') { Join-Path $env:RUNNER_TEMP 'pwsh74/pwsh.exe' } else { (Get-Command pwsh).Source }
-          & $engine -NoProfile -File ./scripts/Test.ps1
+          # Analyzer 1.24 targets a newer SMA assembly; run it on the current job.
+          # The full Pester suite still runs on the exact minimum runtime.
+          if ('${{ matrix.powershell }}' -eq 'minimum') {
+            & $engine -NoProfile -File ./scripts/Test.ps1 -SkipAnalyzer
+          } else {
+            & $engine -NoProfile -File ./scripts/Test.ps1
+          }
           if ($LASTEXITCODE -ne 0) { throw 'Test suite failed.' }
       - run: ./scripts/Build.ps1
   installer:
