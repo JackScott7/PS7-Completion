@@ -1,9 +1,10 @@
 {
     param($Context)
-    $commands = @('install', 'show', 'source', 'search', 'list', 'upgrade', 'uninstall', 'export', 'import', '--help', '--version')
+    $commands = @('install', 'show', 'source', 'search', 'list', 'upgrade', 'uninstall', 'export', 'import')
     $previous = @($Context.PreviousArguments)
     if (-not $previous.Count) {
-        New-PS7CompletionResult -Candidate $commands -WordToComplete $Context.WordToComplete
+        New-PS7CompletionResult -Candidate $commands -WordToComplete $Context.WordToComplete -ResultType Command
+        New-PS7CompletionResult -Candidate '--help','--version' -WordToComplete $Context.WordToComplete -ResultType ParameterName
         return
     }
     $command = $previous[0]
@@ -29,7 +30,7 @@
         'export' { $options['--output']=1; $options['-o']=1; $options['--source']=1; $options['--include-versions']=0; $options['--accept-source-agreements']=0 }
         'import' { $options['--import-file']=1; $options['-i']=1; $options['--ignore-unavailable']=0; $options['--ignore-versions']=0; $options['--accept-package-agreements']=0; $options['--accept-source-agreements']=0 }
         'source' {
-            if (-not $tail.Count) { New-PS7CompletionResult -Candidate add,list,update,remove,reset,export -WordToComplete $Context.WordToComplete; return }
+            if (-not $tail.Count) { New-PS7CompletionResult -Candidate add,list,update,remove,reset,export -WordToComplete $Context.WordToComplete -ResultType Command; return }
             if ($tail[0] -notin @('add','list','update','remove','reset','export')) { return }
             $options['--name']=1; $options['-n']=1
             if ($tail[0] -eq 'add') { $options['--arg']=1; $options['--type']=1; $options['--accept-source-agreements']=0 }

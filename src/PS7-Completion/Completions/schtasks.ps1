@@ -2,7 +2,7 @@
     param($Context)
     $operations = @('/Create', '/Delete', '/Query', '/Change', '/Run', '/End', '/ShowSid', '/?')
     if (-not $Context.PreviousArguments.Count) {
-        New-PS7CompletionResult -Candidate $operations -WordToComplete $Context.WordToComplete
+        New-PS7CompletionResult -Candidate $operations -WordToComplete $Context.WordToComplete -ResultType Command
         return
     }
     $operation = $Context.PreviousArguments[0]

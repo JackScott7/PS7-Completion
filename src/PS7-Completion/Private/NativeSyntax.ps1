@@ -50,7 +50,8 @@ function Invoke-PS7SyntaxCompletion {
         }
         return
     }
-    $candidates = @($node.Options.Keys)
-    if (-not $positional) { $candidates += @($node.Children.Keys) }
-    New-PS7CompletionResult -Candidate $candidates -WordToComplete $Context.WordToComplete
+    if (-not $positional) {
+        New-PS7CompletionResult -Candidate @($node.Children.Keys) -WordToComplete $Context.WordToComplete -ResultType Command
+    }
+    New-PS7CompletionResult -Candidate @($node.Options.Keys) -WordToComplete $Context.WordToComplete -ResultType ParameterName
 }

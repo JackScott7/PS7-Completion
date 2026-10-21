@@ -86,7 +86,11 @@ function Invoke-PS7Provider {
             if ($result -isnot [System.Management.Automation.CompletionResult]) { throw 'Provider emitted something other than CompletionResult.' }
         }
         $script:Registry[$Name].Status = 'Loaded'
-        $results | Sort-Object -Property CompletionText -Unique -CaseSensitive | Select-Object -First 512
+        # Preserve the command/operand distinction even when punctuation would
+        # otherwise sort flags ahead of subcommands in the completion menu.
+        $results | Sort-Object -Property CompletionText -Unique -CaseSensitive |
+            Sort-Object -Property @{ Expression = { if ($_.ResultType -eq 'Command') { 0 } else { 1 } } }, CompletionText -CaseSensitive |
+            Select-Object -First 512
     }
     catch {
         if ($script:Registry.ContainsKey($Name)) { $script:Registry[$Name].Status = 'Failed' }

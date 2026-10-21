@@ -3,7 +3,7 @@
     $operations = @('query', 'queryex', 'start', 'stop', 'qc', 'config', 'create', 'delete', 'description')
     $previous = @($Context.PreviousArguments)
     if (-not $previous.Count) {
-        New-PS7CompletionResult -Candidate $operations -WordToComplete $Context.WordToComplete
+        New-PS7CompletionResult -Candidate $operations -WordToComplete $Context.WordToComplete -ResultType Command
         return
     }
     if ($previous[0].StartsWith('\\')) { return }

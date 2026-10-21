@@ -4,6 +4,8 @@ Providers support the explicit subsets below, not every native CLI feature. They
 never execute the command being completed. Unknown options conservatively suppress
 provider suggestions. PowerShell itself may still offer filesystem fallbacks.
 All dynamic data is local; remote-target contexts suppress local entity names.
+Completion menus list commands/subcommands first, followed by options and other
+arguments, with alphabetical ordering within each group across all providers.
 
 | Provider | Commands and supported argument behavior |
 | --- | --- |
