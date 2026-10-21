@@ -23,8 +23,10 @@ function Invoke-PS7QueryProcess {
     foreach ($argument in @('-NoLogo', '-NoProfile', '-NonInteractive', '-File', $WorkerPath, '-RequestBase64', $payload)) { $start.ArgumentList.Add($argument) }
     $process = [Diagnostics.Process]::new()
     $process.StartInfo = $start
+    $started = $false
     try {
         if (-not $process.Start()) { throw 'Cannot start completion query worker.' }
+        $started = $true
         $output = $process.StandardOutput.ReadToEndAsync()
         $errors = $process.StandardError.ReadToEndAsync()
         $remaining = [Math]::Max(0, $TimeoutMilliseconds - [int]$clock.ElapsedMilliseconds)
@@ -36,7 +38,7 @@ function Invoke-PS7QueryProcess {
         return ($json | ConvertFrom-Json -AsHashtable -ErrorAction Stop)
     }
     finally {
-        if ($process.Id -and -not $process.HasExited) {
+        if ($started -and -not $process.HasExited) {
             $process.Kill($true)
             # Reap our worker rather than leaving a runaway task after timeout.
             $process.WaitForExit()

@@ -9,7 +9,11 @@ try {
         'Processes' {
             Get-Process | Select-Object -First 4096 | ForEach-Object { @{ Id = [string]$_.Id; Name = $_.ProcessName + '.exe' } }
         }
-        'Services' { Get-Service | Select-Object -First 4096 -ExpandProperty Name }
+        'Services' {
+            $services = [System.ServiceProcess.ServiceController]::GetServices()
+            try { $services | Select-Object -First 4096 -ExpandProperty ServiceName }
+            finally { foreach ($service in $services) { $service.Dispose() } }
+        }
         'Tasks' {
             # COM avoids launching schtasks.exe and does not require a task mutation.
             $scheduler = New-Object -ComObject 'Schedule.Service'
