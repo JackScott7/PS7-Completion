@@ -19,7 +19,7 @@ function New-PS7CompletionResult {
     foreach ($value in ($Candidate | Sort-Object)) {
         if ([string]::IsNullOrEmpty($value) -or -not $value.StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase) -or -not $seen.Add($value)) { continue }
         $text = $value
-        if ($value -notmatch '^[\p{L}\p{N}_./\\:@=+%-]+$' -or $WordToComplete.StartsWith("'") -or $WordToComplete.StartsWith('"')) {
+        if ($value.StartsWith('@') -or $value -notmatch '^[\p{L}\p{N}_./\\:@=+%-]+$' -or $WordToComplete.StartsWith("'") -or $WordToComplete.StartsWith('"')) {
             $text = "'" + $value.Replace("'", "''") + "'"
         }
         $description = if ($ToolTip) { $ToolTip } else { $value }
