@@ -60,4 +60,9 @@ Describe 'Public provider registration' {
     It 'completes quoted prefixes without double quoting' {
         (New-PS7CompletionResult -Candidate 'two words' -WordToComplete '"two').CompletionText | Should -Be "'two words'"
     }
+    It 'loads the documented example without editing module files' {
+        Register-PS7CompletionProvider -Name example -CommandName mytool,mytool.exe -Path (Join-Path $PSScriptRoot '../../examples/mytool.ps1')
+        (Complete-Line 'mytool bu').CompletionText | Should -Contain build
+        (Complete-Line 'mytool.exe deploy sta').CompletionText | Should -Contain staging
+    }
 }
