@@ -80,7 +80,7 @@ function Invoke-PS7Provider {
             if ($result -isnot [System.Management.Automation.CompletionResult]) { throw 'Provider emitted something other than CompletionResult.' }
         }
         $script:Registry[$Name].Status = 'Loaded'
-        $results | Sort-Object -Property CompletionText -Unique | Select-Object -First 512
+        $results | Sort-Object -Property CompletionText -Unique -CaseSensitive | Select-Object -First 512
     }
     catch {
         if ($script:Registry.ContainsKey($Name)) { $script:Registry[$Name].Status = 'Failed' }

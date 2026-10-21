@@ -15,7 +15,7 @@ function New-PS7CompletionResult {
         [System.Management.Automation.CompletionResultType] $ResultType = 'ParameterValue'
     )
     try { $prefix = ConvertFrom-PS7Literal $WordToComplete } catch { return }
-    $seen = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    $seen = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
     foreach ($value in ($Candidate | Sort-Object)) {
         if ([string]::IsNullOrEmpty($value) -or -not $value.StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase) -or -not $seen.Add($value)) { continue }
         $text = $value
