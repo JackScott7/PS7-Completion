@@ -28,10 +28,15 @@ need to modify the installed module or its registry.
 - PSScriptAnalyzer: no warning/error diagnostics for runtime and scripts at that run.
 - [Initial CI run](https://github.com/JackScott7/PS7-Completion/actions/runs/39674031963):
   validation and installer jobs passed at commit `54e1d59`.
-- [Updated runtime CI](https://github.com/JackScott7/PS7-Completion/actions/runs/39675761425):
-  current-PowerShell and installer jobs passed at `f46dc7d`. The minimum-version
-  download step exposed a checksum-text decoding issue, fixed in `d8e26bc`;
-  minimum-version validation is not claimed until its corrected run succeeds.
+- [Final compatibility CI](https://github.com/JackScott7/PS7-Completion/actions/runs/39676759257):
+  all three jobs passed at `6a30e01`: full Pester suite on PowerShell 7.4.0,
+  full suite plus analyzer on the current runner engine, and installer lifecycle.
+  Analyzer 1.24 itself requires a newer assembly than 7.4.0, so it runs on the
+  current-engine job; no runtime tests are omitted on the minimum engine.
+- [Private v0.1.0 draft](https://github.com/JackScott7/PS7-Completion/releases/tag/untagged-82bfaf6ab8f75af738fd):
+  Windows x64 installer, module ZIP, SHA256SUMS and generated WinGet manifest from
+  the tested `6a30e01` source. The repository and draft remain private; the manifest
+  is preparation for future distribution, not a publicly usable package.
 - Installer test uses a disposable GitHub-hosted Windows Server 2025 runner. It
   installs 0.1.0, reinstalls it, upgrades to a synthetic 0.1.1 payload, confirms new
   shell discovery and removes both owned versions while retaining a user-added file.

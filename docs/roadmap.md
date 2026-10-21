@@ -33,6 +33,9 @@ also reach `main`; tag accepted releases `v0.1.0`, `v0.5.0`, `v0.10.0`, and `v1.
 Prerelease tags must have explicit prerelease metadata consistent with the module
 manifest; do not use a four-component numeric version to imitate SemVer labels.
 
+The private MVP is stabilized on `release/0.1`; later release branches remain
+planned and are not created before their work begins.
+
 Each milestone inherits every earlier acceptance gate. A release cannot trade an
 unfinished earlier requirement for a later feature. Optional distribution channels
 and additional providers do not block these four milestones.
@@ -48,7 +51,7 @@ results, specific limitations and the private-delivery boundary are in MVP statu
 
 ### M1. Foundation and configuration
 
-- [ ] Preserve Windows, PowerShell 7.4+ Core, pure PowerShell runtime and x64
+- [x] Preserve Windows, PowerShell 7.4+ Core, pure PowerShell runtime and x64
   installer scope. Verify minimum and selected current supported PowerShell
   versions; record exact OS/tool versions in the test evidence.
 - [x] Validate registry IDs, executable lists and provider paths before registering
@@ -172,19 +175,19 @@ public installation smoke test. External submission delays do not waive this gat
 
 ### M6. MVP verification and documentation
 
-- [ ] Run Pester 5, PSScriptAnalyzer and archive build in Windows CI; analyze runtime
+- [x] Run Pester 5, PSScriptAnalyzer and archive build in Windows CI; analyze runtime
   and build/release scripts. Test both minimum and selected current supported PS7.
-- [ ] Add executable-specific tests under `tests/Completions/`, core edge cases under
+- [x] Add executable-specific tests under `tests/Completions/`, core edge cases under
   `tests/Core/`, and synthetic fixtures. Mock data sources; never mutate live
   services/tasks/processes as part of provider tests.
-- [ ] Run real interactive Tab completion in a disposable environment, separately
+- [x] Run real interactive Tab completion in a disposable environment, separately
   from parser/API tests. Cover every registered executable name and `sc` alias safety.
 - [ ] Measure cold import and warm static completion on a recorded reference
   machine. Proposed repeatable protocol: 30 fresh-process imports and 100 warm
   requests per provider; report median and p95. Target p95 under 100 ms import and
   50 ms warm static completion; investigate and explicitly resolve misses before
   acceptance. Separately prove the 500 ms dynamic-query deadline and cleanup.
-- [ ] Update README, authoring guide, contribution instructions, changelog and
+- [x] Update README, authoring guide, contribution instructions, changelog and
   troubleshooting to reflect actual supported syntax, exclusions, cache semantics,
   prerequisites, install/upgrade/remove behavior and remaining limitations.
 
