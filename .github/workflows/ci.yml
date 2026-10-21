@@ -24,8 +24,9 @@ jobs:
           $base = 'https://github.com/PowerShell/PowerShell/releases/download/v7.4.0'
           $archive = Join-Path $env:RUNNER_TEMP 'PowerShell-7.4.0-win-x64.zip'
           Invoke-WebRequest "$base/PowerShell-7.4.0-win-x64.zip" -OutFile $archive
-          $hashText = (Invoke-WebRequest "$base/hashes.sha256").Content
-          $line = ($hashText -split "`n" | Where-Object { $_ -match 'PowerShell-7.4.0-win-x64.zip$' })
+          $hashFile = Join-Path $env:RUNNER_TEMP 'powershell-hashes.sha256'
+          Invoke-WebRequest "$base/hashes.sha256" -OutFile $hashFile
+          $line = (Get-Content $hashFile | Where-Object { $_ -match 'PowerShell-7.4.0-win-x64.zip\s*$' })
           if (-not $line -or (Get-FileHash $archive).Hash -ne ($line -split '\s+')[0]) { throw 'PowerShell archive checksum mismatch.' }
           Expand-Archive $archive (Join-Path $env:RUNNER_TEMP 'pwsh74')
       - name: Test selected PowerShell

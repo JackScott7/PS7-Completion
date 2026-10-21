@@ -15,8 +15,10 @@ jobs:
         run: |
           Install-Module Pester -RequiredVersion 5.7.1 -Force -Scope CurrentUser
           Install-Module PSScriptAnalyzer -RequiredVersion 1.24.0 -Force -Scope CurrentUser
-          choco install innosetup --version=6.4.3 --yes --no-progress
-          if ($LASTEXITCODE -ne 0) { throw 'Inno Setup installation failed.' }
+          if (-not (Test-Path 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe')) {
+            choco install innosetup --version=6.4.3 --yes --no-progress
+            if ($LASTEXITCODE -ne 0) { throw 'Inno Setup installation failed.' }
+          }
           'C:\Program Files (x86)\Inno Setup 6' >> $env:GITHUB_PATH
       - run: ./scripts/Test.ps1
       - run: ./scripts/Build.ps1 -Installer
