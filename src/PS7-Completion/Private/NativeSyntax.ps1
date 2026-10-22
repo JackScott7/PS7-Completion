@@ -45,7 +45,7 @@ function Invoke-PS7SyntaxCompletion {
         $positional = $true
     }
     if ($pending) {
-        if ($node.Values.ContainsKey($pending)) {
+        if (@($node.Values.Keys) -ccontains $pending) {
             New-PS7CompletionResult -Candidate $node.Values[$pending] -WordToComplete $Context.WordToComplete
         }
         return

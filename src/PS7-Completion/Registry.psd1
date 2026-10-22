@@ -26,4 +26,11 @@
     uvicorn = @{ Commands = @('uvicorn', 'uvicorn.exe'); File = 'Completions/uvicorn.ps1' }
     twine = @{ Commands = @('twine', 'twine.exe'); File = 'Completions/twine.ps1' }
     ruff = @{ Commands = @('ruff', 'ruff.exe'); File = 'Completions/ruff.ps1' }
+    ipconfig = @{ Commands = @('ipconfig', 'ipconfig.exe'); File = 'Completions/ipconfig.ps1' }
+    tracert = @{ Commands = @('tracert', 'tracert.exe'); File = 'Completions/tracert.ps1' }
+    netstat = @{ Commands = @('netstat', 'netstat.exe'); File = 'Completions/netstat.ps1' }
+    curl = @{ Commands = @('curl.exe'); File = 'Completions/curl.ps1' }
+    cargo = @{ Commands = @('cargo', 'cargo.exe'); File = 'Completions/cargo.ps1' }
+    docker = @{ Commands = @('docker', 'docker.exe'); File = 'Completions/docker.ps1' }
+    nslookup = @{ Commands = @('nslookup', 'nslookup.exe'); File = 'Completions/nslookup.ps1' }
 }

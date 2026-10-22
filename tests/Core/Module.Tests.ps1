@@ -14,8 +14,8 @@ Describe 'Module contract' {
         $commands | Should -Contain 'Register-PS7CompletionProvider'
         $commands | Should -Contain 'New-PS7CompletionResult'
     }
-    It 'registers all 27 providers without eagerly loading them' {
-        @(Get-PS7CompletionProvider).Count | Should -Be 27
+    It 'registers all 34 providers without eagerly loading them' {
+        @(Get-PS7CompletionProvider).Count | Should -Be 34
         @(Get-PS7CompletionProvider | Where-Object Loaded).Count | Should -Be 0
         (Get-PS7CompletionProvider | Where-Object Name -EQ services).Commands | Should -Be @('sc.exe')
     }

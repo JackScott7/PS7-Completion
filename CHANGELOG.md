@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.3 — baseline network and developer tools
+
+- Add Windows ipconfig, tracert, nslookup, and netstat providers.
+- Add curl.exe, Cargo, and Docker with nested Compose support: 34 providers total.
+- Preserve command-first ordering and suppress suggestions inside free-form or
+  forwarded arguments.
+- Match operand-value tables case-sensitively, keeping curl `-H` headers separate
+  from `-h` help topics.
+
 ## 0.1.2 — expanded built-in providers
 
 - Add Windows `ping`, `uvx`, `uvicorn`, `twine`, and `ruff`, bringing the total to 27.

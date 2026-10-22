@@ -19,6 +19,9 @@ Describe 'Native static provider integration' {
         @{ Line = 'rustup toolchain ' }
         @{ Line = 'ruff ' }
         @{ Line = 'twine ' }
+        @{ Line = 'cargo ' }
+        @{ Line = 'docker ' }
+        @{ Line = 'docker compose ' }
     ) {
         $result = [System.Management.Automation.CommandCompletion]::CompleteInput($Line, $Line.Length, $null)
         $matches = @($result.CompletionMatches)

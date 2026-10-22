@@ -57,3 +57,26 @@ References: [Windows ping](https://learn.microsoft.com/en-us/windows-server/admi
 [Uvicorn settings](https://uvicorn.dev/settings/),
 [Twine](https://twine.readthedocs.io/en/stable/),
 [Ruff](https://docs.astral.sh/ruff/).
+
+## Baseline additions in 0.1.3
+
+Checked on 2026-10-22. `ipconfig`, `tracert`, `nslookup`, `netstat`, and
+`curl.exe` resolve to Windows System32. Local `/?` help was
+checked for ipconfig/tracert/netstat; no network diagnostics were executed.
+System curl reports 8.21.0 with Schannel. Cargo resolves to the Rustup cargo/bin
+proxy and reports 1.98.1; WinGet lists Rustup 1.29.1 and a separate Rust GNU
+1.95.0 installation. These observations do not imply the standalone compiler
+record is the active toolchain.
+
+Docker is absent from PATH and WinGet's installed inventory. WinGet catalog
+`Docker.DockerDesktop` identifies Docker Inc.'s distribution; the static provider
+uses official Docker/Compose documentation without requiring an installation.
+No new packages were installed.
+
+Syntax references: [ipconfig](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/ipconfig),
+[tracert](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/tracert),
+[nslookup](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/nslookup),
+[netstat](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/netstat),
+[curl](https://curl.se/docs/manpage.html),
+[Cargo](https://doc.rust-lang.org/cargo/commands/index.html),
+[Docker Compose](https://docs.docker.com/reference/cli/docker/compose/).

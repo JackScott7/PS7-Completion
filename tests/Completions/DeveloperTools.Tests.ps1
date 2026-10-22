@@ -46,6 +46,25 @@ Describe 'Developer tool provider integration' {
         @{ Line='ruff.exe check --output-format j'; Expected='json' }
         @{ Line='ruff format --target-version py31'; Expected='py314' }
         @{ Line='ruff --config ruff.toml check --fix --col'; Expected='--color' }
+        @{ Line='ipconfig /a'; Expected='/all' }
+        @{ Line='ipconfig.exe /allcompartments /re'; Expected='/renew' }
+        @{ Line='tracert -'; Expected='-h' }
+        @{ Line='tracert.exe -h 10 -'; Expected='-w' }
+        @{ Line='nslookup -type=AA'; Expected='-type=AAAA' }
+        @{ Line='nslookup.exe -timeout=2 -querytype=M'; Expected='-querytype=MX' }
+        @{ Line='netstat -p T'; Expected='TCP' }
+        @{ Line='netstat.exe -s -p I'; Expected='ICMP' }
+        @{ Line='curl.exe -X P'; Expected='POST' }
+        @{ Line='curl.exe -h h'; Expected='http' }
+        @{ Line='curl.exe --url https://example.invalid --hea'; Expected='--header' }
+        @{ Line='cargo bu'; Expected='build' }
+        @{ Line='cargo.exe build --rel'; Expected='--release' }
+        @{ Line='cargo new --edition 202'; Expected='2024' }
+        @{ Line='docker co'; Expected='compose' }
+        @{ Line='docker.exe compose -f compose.yaml u'; Expected='up' }
+        @{ Line='docker compose up --d'; Expected='--detach' }
+        @{ Line='docker compose --ansi a'; Expected='always' }
+        @{ Line='docker --context local ps --fo'; Expected='--format' }
     ) {
         $result = [Management.Automation.CommandCompletion]::CompleteInput($Line, $Line.Length, $null)
         $result.CompletionMatches.CompletionText | Should -Contain $Expected
@@ -98,6 +117,25 @@ Describe 'Developer tool provider integration' {
             @{ Name='ruff'; Line='ruff check --select ' }
             @{ Name='ruff'; Line='ruff format --fix ' }
             @{ Name='ruff'; Line='ruff check --config ' }
+            @{ Name='ipconfig'; Line='ipconfig /renew ' }
+            @{ Name='ipconfig'; Line='ipconfig /setclassid Ethernet ' }
+            @{ Name='ipconfig'; Line='ipconfig /unknown ' }
+            @{ Name='tracert'; Line='tracert -h ' }
+            @{ Name='tracert'; Line='tracert example.invalid ' }
+            @{ Name='nslookup'; Line='nslookup example.invalid ' }
+            @{ Name='nslookup'; Line='nslookup -type ' }
+            @{ Name='nslookup'; Line='nslookup -unknown=value ' }
+            @{ Name='netstat'; Line='netstat 5 ' }
+            @{ Name='curl'; Line='curl.exe -H ' }
+            @{ Name='curl'; Line='curl.exe -u ' }
+            @{ Name='cargo'; Line='cargo build --manifest-path ' }
+            @{ Name='cargo'; Line='cargo run -- --app-flag ' }
+            @{ Name='docker'; Line='docker run --env ' }
+            @{ Name='docker'; Line='docker run alpine ' }
+            @{ Name='docker'; Line='docker exec container sh ' }
+            @{ Name='docker'; Line='docker compose -f ' }
+            @{ Name='docker'; Line='docker compose exec web sh ' }
+            @{ Name='docker'; Line='docker compose down --build ' }
         ) {
             $tokens = $null; $errors = $null
             $ast = [Management.Automation.Language.Parser]::ParseInput($Line, [ref]$tokens, [ref]$errors)

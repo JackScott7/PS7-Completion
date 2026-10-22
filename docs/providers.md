@@ -1,4 +1,4 @@
-# Bundled provider support in v0.1.2
+# Bundled provider support in v0.1.3
 
 Providers support the explicit subsets below, not every native CLI feature. They
 never execute the command being completed. Unknown options conservatively suppress
@@ -21,16 +21,29 @@ Windows `ping` / `ping.exe` is also bundled (provider ID `ping`). It supports
 sends packets or resolves hosts. Windows `-r` requires a count; `-R` is a flag.
 This provider does not implement Linux/WSL ping syntax.
 
+Additional Windows network providers support the bare command and `.exe` name:
+
+| ID | Supported subset |
+| --- | --- |
+| ipconfig | `/all`, `/allcompartments`, `/flushdns`, `/displaydns`, `/registerdns`, `/?`; renew/release (IPv4/IPv6) and show/setclassid operations leave adapter/class operands free text. No adapter enumeration. |
+| tracert | `-d -R -4 -6 /?`; hop-count, source-route, timeout, source-address operands (`-h -j -w -S`); stops after the target. |
+| nslookup | Noninteractive `-option=value` syntax: type/querytype/class values, timeout/retry/port/domain/srchlist, debug/recurse/search/vc/defname toggles. Stops at the hostname; interactive prompt commands are not supported. |
+| netstat | Common Windows flags and `-p` protocol values; adds IP/ICMP protocol families when `-s` precedes `-p`; stops at the repeat interval. Combined short flags are not parsed. |
+
 ## Developer tools
 
-The following 21 providers use literal syntax tables, with no native process,
+The following 24 providers use literal syntax tables, with no native process,
 network request, project import, repository scan, or package discovery during
-completion. Each supports the bare command and `.exe` spelling, except npm,
+completion. Each supports the bare command and `.exe` spelling, except curl
+(registered as `curl.exe` only to avoid aliases) and npm,
 which supports `npm`, `npm.cmd`, and `npm.ps1`. Python and pip also support
 `python3[.exe]` and `pip3[.exe]`. Provider IDs are in the first column.
 
 | ID | Command and supported subset |
 | --- | --- |
+| curl | `curl.exe`: common HTTP, download/upload, header/data/form, auth/proxy/TLS, timeout/retry options; request-method and help-category values. URLs, credentials and filenames stay free text. |
+| cargo | build, check, run, test, new, init, add, remove, clean, doc, update, search, install, uninstall, publish; common global and command-specific operands, color/edition values. Stops at `--` for forwarded arguments; toolchain prefixes, command aliases and external subcommands are not parsed. |
+| docker | build/run/exec, ps/images, pull/push, logs/inspect, stop/start/restart, rm/rmi, info/version, login/logout. Compose supports up/down/build/ps/logs/config/pull/push/start/stop/restart/exec/run/version with file/project/env/profile options before the subcommand. Stops at image/container/service in run/exec; no daemon access or container/image/service discovery. Standalone legacy `docker-compose` is not registered. |
 | git | `git`: status, add, commit, diff, log, clone, fetch, pull, push, branch, switch, checkout, restore, remote add/remove/rename, stash push/pop/list/apply; root `-C`/`-c` operands. No branch or remote enumeration. |
 | gh | `gh`: auth login/status/logout, pr list/view/create/checkout, issue list/view/create, repo clone/view/list, workflow list/view/run. PR state values. No API requests. |
 | ripgrep | `rg`: common search/output flags; pattern, file, glob, type, context, replacement operands; color values. |
