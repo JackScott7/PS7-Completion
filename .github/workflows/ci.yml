@@ -41,6 +41,16 @@ jobs:
           }
           if ($LASTEXITCODE -ne 0) { throw 'Test suite failed.' }
       - run: ./scripts/Build.ps1
+      - name: Record performance (informational timing)
+        if: matrix.powershell == 'current'
+        run: |
+          $build = Get-Content ./dist/latest-build.json -Raw | ConvertFrom-Json
+          ./scripts/Measure-Performance.ps1 -Manifest (Join-Path $build.Payload 'PS7-Completion.psd1') -ColdSamples 3 -WarmSamples 30 -LiveQueries -OutputPath ./dist/performance/ci.json
+      - uses: actions/upload-artifact@v4
+        if: always() && matrix.powershell == 'current'
+        with:
+          name: performance-evidence
+          path: dist/performance/*.json
   installer:
     runs-on: windows-latest
     defaults:
