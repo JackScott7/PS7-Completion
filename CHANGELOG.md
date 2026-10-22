@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+- Add all-provider cold/warm benchmarks, local query/result-count reporting,
+  worker timing diagnostics and opt-in same-machine regression checks.
+- Assemble runtime helpers during builds and load the SSH parser on first use.
+- Index command ownership, normalize SSH cache paths, deduplicate per-parse
+  filesystem reads and include link targets in dependency invalidation.
+- Bound task-folder traversal, reduce process/service collection overhead and
+  dispose process handles after enumeration while retaining isolated query workers.
+- Reduce result sorting overhead, add a large-set prefix search, and retain
+  command-first ordering, safe quoting, case-distinct candidates and result limits.
+- Retain performance JSON artifacts in CI without imposing noisy timing thresholds
+  on shared hosted runners.
+
 ## 0.1.4 — Python routing and installer-only distribution
 
 - Distribute only the Inno Setup installer and checksums; remove module ZIP output.

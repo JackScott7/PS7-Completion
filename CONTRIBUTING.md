@@ -18,3 +18,11 @@ is used only for the PowerShell 7.4.0 compatibility job because analyzer 1.24 ta
 a newer PowerShell assembly. The current-engine job must always run analysis.
 Measure import/completion with `scripts/Measure-Completion.ps1`. Installer tests
 run only on explicitly disposable GitHub-hosted runners.
+
+For performance work, follow [the performance checklist](docs/performance-plan.md).
+Measure the built payload as well as source; the installed runtime is assembled
+at build time while providers and the SSH parser remain lazy. Keep sample counts,
+machine, engine and OS identical for comparisons. CI retains informational timing
+artifacts; use `scripts/Compare-Performance.ps1 -EnforceTiming` on a controlled
+machine to enforce regressions. Never accept fewer results or failed queries as
+an improvement. Do not compare sandbox-denied lookups with unrestricted lookups.

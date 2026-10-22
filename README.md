@@ -82,7 +82,13 @@ Install-Module PSScriptAnalyzer -RequiredVersion 1.24.0 -Scope CurrentUser
 # Requires Inno Setup 6 and ISCC.exe on PATH:
 ./scripts/Build.ps1 -Installer
 ./scripts/Measure-Completion.ps1
+# Broader cold/warm benchmark, including read-only system lookups:
+./scripts/Measure-Performance.ps1 -LiveQueries -OutputPath ./dist/performance/current.json
 ```
+
+See the [six-step performance checklist](docs/performance-plan.md) for the benchmark
+protocol, measured results and regression comparison command. Build payloads use an
+assembled runtime to reduce import overhead; editable source keeps separate helpers.
 
 Each build creates an isolated directory under `dist/builds/`; `dist/latest-build.json`
 lists its exact installer and checksum files. Without `-Installer`, the build only stages and validates the module payload. The installer targets x64 Windows, requires elevation,

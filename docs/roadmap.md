@@ -53,6 +53,11 @@ and additional providers do not block these four milestones.
 
 ## Current baseline
 
+Post-v0.1.4 performance work is tracked in the local
+[six-item implementation checklist](performance-plan.md). It covers F3/F4/F6
+benchmarking, runtime import, lookup, resolution/cache and result-processing work;
+it does not close the remaining v0.5 syntax or installer acceptance gates.
+
 The framework supplies validated lazy callbacks, AST context, four public commands,
 custom providers, context-sensitive built-in providers, literal quoting, isolated
 queries, TTL caching, versioned builds and installer lifecycle CI. Test and measurement
