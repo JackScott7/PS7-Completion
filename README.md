@@ -28,4 +28,9 @@ including Python scripts run directly or through `python`. See the
 [Wiki](https://github.com/JackScott7/PS7-Completion/wiki) for supported syntax,
 configuration, custom completions, and technical details.
 
+Version 0.1.6 adds local file-path suggestions, more detailed option values and
+contexts for SSH, WinGet, scheduled tasks, services and taskkill. See the
+[release notes](https://github.com/JackScott7/PS7-Completion/wiki/Release-v0.1.6)
+for supported syntax and limitations.
+
 PS7-Completion is licensed under [MIT](LICENSE).

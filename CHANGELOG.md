@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.1.6 - Option values and detailed provider contexts
+
+### Added
+
+- Complete local SSH identity/config and WinGet import/export paths with safely
+  quoted literal names, including supported attached operands.
+- Suggest WinGet source types, trust levels and explicit booleans; service
+  accounts and dependency lists; taskkill filter names, operators and status values.
+- Add capability fixtures for F1/F2, including native version snapshots, repeated
+  operands, wrong positions, remote contexts and expression rejection.
+
+### Changed
+
+- Recognize WinGet long-option equals values without enabling equals syntax for
+  schtasks or sc.exe. Expand source subcommand tables against WinGet 1.29.380 help.
+- Filter scheduled-task options by schedule and incompatible duration/output
+  combinations; complete numeric modifiers and quoted day/month lists.
+- Limit local path scans to fixed drives, one literal directory, 4096 entries and
+  cooperative 100 ms scan checks. Skip network paths and reparse points.
+
+### Fixed
+
+- Preserve literal attached Windows drive paths while rejecting expression operands.
+- Keep service/filter values in their supported contexts and suppress local data
+  for remote targets. Filter grammar does not query processes or sources.
+- Parse SSH quoted comments, preserve conditional Include state across files and
+  support Match all without evaluating conditional commands.
+
+F1/F2 deliver their documented subsets in this private patch. F3-F6 and inherited
+acceptance work remain open; this release does not claim v0.5 acceptance or public
+WinGet availability.
+
 ## 0.1.5 - Performance and regression checks
 
 ### Added
