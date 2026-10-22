@@ -67,20 +67,27 @@ function New-PS7StaticCompletion {
 }
 
 function Invoke-PS7Provider {
-    param([string] $Name, [string] $WordToComplete, [System.Management.Automation.Language.CommandAst] $CommandAst, [int] $CursorPosition)
+    param([string] $Name, [string] $WordToComplete, [System.Management.Automation.Language.CommandAst] $CommandAst, [int] $CursorPosition, $Context)
     $previousClock = $script:QueryClock
     $script:QueryClock = [Diagnostics.Stopwatch]::StartNew()
     try {
         $ErrorActionPreference = 'Stop'
         $ProgressPreference = 'SilentlyContinue'
         if (-not $script:Registry.ContainsKey($Name) -or -not $script:Registry[$Name].Enabled) { return }
+        if ($null -eq $Context) { $Context = New-PS7CompletionContext $WordToComplete $CommandAst $CursorPosition }
+        if (-not $Context.IsSupported) { return }
+        if ($Name -eq 'python' -and $script:Registry[$Name].Source -eq 'BuiltIn') {
+            $route = Get-PS7PythonScriptRoute -Context $Context
+            if ($null -ne $route) {
+                Invoke-PS7Provider -Name $route.Name -Context $route.Context
+                return
+            }
+        }
         if (-not $script:Providers.ContainsKey($Name)) {
             $loaded = @(& $script:Registry[$Name].File *>&1)
             if ($loaded.Count -ne 1 -or $loaded[0] -isnot [scriptblock]) { throw 'Provider file must return exactly one scriptblock.' }
             $script:Providers[$Name] = $loaded[0]
         }
-        $context = New-PS7CompletionContext $WordToComplete $CommandAst $CursorPosition
-        if (-not $context.IsSupported) { return }
         $results = @(& $script:Providers[$Name] $context *>&1)
         foreach ($result in $results) {
             if ($result -isnot [System.Management.Automation.CompletionResult]) { throw 'Provider emitted something other than CompletionResult.' }
@@ -100,18 +107,20 @@ function Invoke-PS7Provider {
 }
 
 function Assert-PS7ProviderDefinition {
-    param([string] $Name, [string[]] $CommandName, [switch] $SkipAliasCheck)
+    param([string] $Name, [string[]] $CommandName, [switch] $SkipAliasCheck, [hashtable] $Aliases)
     if ($Name -notmatch '^[a-zA-Z][a-zA-Z0-9_-]{0,63}$') { throw 'Provider names must be simple identifiers (up to 64 characters).' }
     if (-not $CommandName.Count) { throw 'At least one executable name is required.' }
     $seen = @{}
-    $aliases = @{}
-    if (-not $SkipAliasCheck) {
+    if ($null -eq $Aliases) {
+        $aliases = @{}
+        if (-not $SkipAliasCheck) {
         foreach ($alias in $ExecutionContext.SessionState.InvokeCommand.GetCommands('*', [Management.Automation.CommandTypes]::Alias, $true)) { $aliases[$alias.Name] = $true }
+        }
     }
     foreach ($command in $CommandName) {
         if ($command -notmatch '^[a-zA-Z0-9][a-zA-Z0-9_.-]*$') { throw "Invalid executable name: $command" }
         if ($seen.ContainsKey($command)) { throw "Duplicate executable: $command" }
         $seen[$command] = $true
-        if ($aliases.ContainsKey($command)) { throw "Executable name '$command' is a PowerShell alias. Use its .exe name." }
+        if (-not $SkipAliasCheck -and $aliases.ContainsKey($command)) { throw "Executable name '$command' is a PowerShell alias. Use its .exe name." }
     }
 }

@@ -34,9 +34,13 @@ $builtins = $registryAst.EndBlock.Statements[0].PipelineElements[0].Expression.S
 if ($builtins -isnot [hashtable]) { throw 'Registry must be a data hashtable.' }
 # Validate every entry before registering any callbacks.
 $commands = @{}
+$importAliases = @{}
+foreach ($alias in $ExecutionContext.SessionState.InvokeCommand.GetCommands('*', [Management.Automation.CommandTypes]::Alias, $true)) {
+    $importAliases[$alias.Name] = $true
+}
 foreach ($name in $builtins.Keys) {
     $entry = $builtins[$name]
-    Assert-PS7ProviderDefinition -Name $name -CommandName $entry.Commands -SkipAliasCheck:($name -in $script:Excluded)
+    Assert-PS7ProviderDefinition -Name $name -CommandName $entry.Commands -SkipAliasCheck:($name -in $script:Excluded) -Aliases $importAliases
     $path = [IO.Path]::GetFullPath([IO.Path]::Combine($PSScriptRoot, $entry.File))
     if (-not $path.StartsWith($PSScriptRoot + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase) -or
         -not [IO.File]::Exists($path) -or [IO.Path]::GetExtension($path) -ne '.ps1') { throw "Invalid provider path: $name" }

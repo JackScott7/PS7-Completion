@@ -43,6 +43,45 @@ The context also exposes `Values` (safely decoded literal arguments),
 are parsed, never evaluated; variables, subexpressions and splatting are unsupported.
 Numeric literals, quoted words and escaped literal characters are supported.
 
+## Python scripts: direct and interpreter invocation
+
+Register the script filename once. Put the registration after the module import
+in your PowerShell profile to enable it in future sessions:
+
+```powershell
+Import-Module PS7-Completion
+Register-PS7CompletionProvider -Name mom -CommandName mom.py -Path "$HOME/completions/mom.ps1"
+```
+
+The provider file contains a single scriptblock; [examples/mom.ps1](../examples/mom.ps1)
+implements the top-level commands and options from the task manager example.
+The same provider handles `mom.py a<Tab>` and `python mom.py a<Tab>` (both suggest
+`add`). Direct execution requires your existing PATH/PATHEXT/file association
+setup; the framework does not change it or execute the script during completion.
+
+The bundled Python provider routes literal `.py` filenames for `python`,
+`python.exe`, `python3` and `python3.exe`, including quoted interpreter paths.
+Script paths such as `./mom.py` and `"C:/my scripts/mom.py"` match the registered
+basename case-insensitively: registering `mom.py` applies to that filename in
+any directory, without reading or resolving the script. Use distinct filenames
+when different scripts need different providers.
+
+For routed requests, `Arguments`, `Values`, `PreviousArguments` and `ArgumentIndex`
+are relative to the script, just as for direct invocation. `CommandAst` remains
+the original full invocation and `CursorPosition` remains absolute. Literal
+interpreter switches and `-W`/`-X` operands before the script are skipped; `--`
+ends interpreter options. Unknown interpreter syntax fails conservatively.
+`-c`, `-m` and stdin mode do not route to script providers. `python -m pip`
+(also `python -mpip`) delegates to the enabled provider owning `pip`, with the
+same target-relative context and completion behavior as direct `pip` invocation.
+This includes lazy loading, custom replacement, exclusions and failure handling;
+the bundled file is not loaded separately. Script-name completion itself is not added.
+
+Routing requires the bundled `python` provider to remain enabled and unreplaced.
+Direct `mom.py` completion remains independent. `py`, wrapper functions/aliases,
+and module-mode routing beyond pip are outside this feature. Provider files remain lazy,
+and `-Force` replacement updates both invocation forms in the current session.
+
 New-PS7CompletionResult performs literal case-insensitive prefix matching, preserves
 case-distinct candidates, escapes PowerShell metacharacters, and limits results to
 512. Optional ToolTip and ResultType parameters control presentation. You may return
