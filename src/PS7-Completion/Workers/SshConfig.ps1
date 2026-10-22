@@ -8,6 +8,7 @@ function script:Read-PS7SshConfig {
         Dependencies = [Collections.Generic.List[object]]::new()
         DependencyPaths = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
         Items = @{}
+        Conditional = $false
         Bytes = 0L
     }
     $sshRoot = Join-Path ([Environment]::GetFolderPath('UserProfile')) '.ssh'
@@ -67,27 +68,42 @@ function script:Read-PS7SshConfig {
         if (-not $item -or $item.PSIsContainer) { return }
         if ($item.Length -gt 1048576 -or ($state.Bytes + $item.Length) -gt 4194304) { throw 'SSH config size limit exceeded.' }
         $state.Bytes += $item.Length
-        $conditional = $false
         try { $lines = [IO.File]::ReadAllLines($full) } catch { return }
         foreach ($line in $lines) {
             Assert-TimeBudget
             if ($line -notmatch '^\s*(Host|Include|Match)(?:\s*=\s*|\s+)(.*)$') { continue }
             $directive = $Matches[1]
             $body = $Matches[2]
+            # Tokenize double-quoted values and comments without evaluating any
+            # shell, environment, token or Match expressions. Preserve Windows slashes.
             $tokens = [Collections.Generic.List[string]]::new()
-            foreach ($token in [regex]::Matches($body, '"([^"]*)"|([^\s"#]+)|(#.*$)')) {
-                if ($token.Groups[3].Success) { break }
-                if ($token.Groups[1].Success) { $tokens.Add($token.Groups[1].Value) } else { $tokens.Add($token.Groups[2].Value) }
+            $buffer = [Text.StringBuilder]::new()
+            $quoted = $false
+            for ($i = 0; $i -lt $body.Length; $i++) {
+                $character = $body[$i]
+                if ($character -eq '\' -and $i + 1 -lt $body.Length -and $body[$i + 1] -eq '"') {
+                    [void]$buffer.Append('"'); $i++; continue
+                }
+                if ($character -eq '"') { $quoted = -not $quoted; continue }
+                if (-not $quoted -and $character -eq '#') { break }
+                if (-not $quoted -and [char]::IsWhiteSpace($character)) {
+                    if ($buffer.Length) { $tokens.Add($buffer.ToString()); [void]$buffer.Clear() }
+                } else { [void]$buffer.Append($character) }
             }
-            if ($directive -eq 'Match') { $conditional = $true; continue }
+            if ($quoted) { if ($directive -eq 'Match') { $state.Conditional = $true }; continue }
+            if ($buffer.Length) { $tokens.Add($buffer.ToString()) }
+            if ($directive -eq 'Match') {
+                $state.Conditional = -not ($tokens.Count -eq 1 -and $tokens[0] -eq 'all')
+                continue
+            }
             if ($directive -eq 'Host') {
-                $conditional = $false
+                $state.Conditional = $false
                 foreach ($alias in $tokens) {
                     if ($alias -and $alias -notmatch '[*?!\[\]]') { [void]$state.Hosts.Add($alias) }
                     if ($state.Hosts.Count -gt 4096) { throw 'SSH host limit exceeded.' }
                 }
             }
-            elseif (-not $conditional) {
+            elseif (-not $state.Conditional) {
                 foreach ($include in $tokens) {
                     # Expansions other than ~/ and wildcard filenames are not evaluated.
                     if ($include -match '[$%`]' -or $include.StartsWith('~') -and -not $include.StartsWith('~/')) { continue }

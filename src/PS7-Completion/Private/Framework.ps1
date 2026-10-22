@@ -57,8 +57,13 @@ function ConvertFrom-PS7Literal {
     $argument = $command.CommandElements[1]
     if ($argument -is [Management.Automation.Language.StringConstantExpressionAst]) { return $argument.Value }
     if ($argument -is [Management.Automation.Language.ConstantExpressionAst]) { return $argument.Extent.Text }
-    # Parameter names are already parsed literal tokens; colon arguments require
-    # a separate grammar and are deliberately not evaluated here.
+    # Native attached drive paths may parse as colon parameters. Accept only
+    # literal string operands; expressions and expandable strings remain rejected.
+    if ($argument -is [Management.Automation.Language.CommandParameterAst] -and
+        $argument.Argument -is [Management.Automation.Language.StringConstantExpressionAst]) {
+        return '-' + $argument.ParameterName + ':' + $argument.Argument.Value
+    }
+    # Parameter names without operands are already literal tokens.
     if ($argument -is [Management.Automation.Language.CommandParameterAst] -and $null -eq $argument.Argument) { return $argument.Extent.Text }
     throw 'Expression arguments are unsupported.'
 }

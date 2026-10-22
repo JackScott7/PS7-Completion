@@ -30,20 +30,64 @@
         'export' { $options['--output']=1; $options['-o']=1; $options['--source']=1; $options['--include-versions']=0; $options['--accept-source-agreements']=0 }
         'import' { $options['--import-file']=1; $options['-i']=1; $options['--ignore-unavailable']=0; $options['--ignore-versions']=0; $options['--accept-package-agreements']=0; $options['--accept-source-agreements']=0 }
         'source' {
-            if (-not $tail.Count) { New-PS7CompletionResult -Candidate add,list,update,remove,reset,export -WordToComplete $Context.WordToComplete -ResultType Command; return }
-            if ($tail[0] -notin @('add','list','update','remove','reset','export')) { return }
+            # Capability snapshot: WinGet 1.29.380 source help. No tool is launched
+            # from a completion callback; older versions may expose a smaller subset.
+            foreach ($key in @('--wait','--logs','--open-logs','--verbose','--nowarn','--ignore-warnings','--no-proxy')) { $options[$key]=0 }
+            $options['--proxy']=1
+            $sourceCommands = @('add','list','update','remove','reset','export','edit')
+            if (-not $tail.Count) {
+                New-PS7CompletionResult -Candidate $sourceCommands -WordToComplete $Context.WordToComplete -ResultType Command
+                New-PS7CompletionResult -Candidate @($options.Keys) -WordToComplete $Context.WordToComplete -ResultType ParameterName
+                return
+            }
+            $sourceCommand = $tail[0]
+            if ($sourceCommand -notin $sourceCommands) { return }
             $options['--name']=1; $options['-n']=1
-            if ($tail[0] -eq 'add') { $options['--arg']=1; $options['--type']=1; $options['--accept-source-agreements']=0 }
-            if ($tail[0] -eq 'reset') { $options['--force']=0 }
+            switch ($sourceCommand) {
+                'add' {
+                    foreach ($key in @('--arg','-a','--type','-t','--trust-level','--header')) { $options[$key]=1 }
+                    $options['--accept-source-agreements']=0; $options['--explicit']=0
+                }
+                'edit' {
+                    $options['--explicit']=1; $options['-e']=1
+                }
+                'reset' { $options['--force']=0 }
+            }
             $tail = @($tail | Select-Object -Skip 1)
         }
         default { return }
     }
-    $state = Get-PS7OptionState -Arguments $tail -Options $options
-    if (-not $state.Valid -or $state.Positionals.Count -gt 1) { return }
+    $state = Get-PS7OptionState -Arguments $tail -Options $options -AllowEquals
+    $positionalLimit = if ($command -eq 'source' -and $sourceCommand -eq 'add') { 3 } else { 1 }
+    if (-not $state.Valid -or $state.Positionals.Count -gt $positionalLimit) { return }
+    $word = ConvertFrom-PS7Literal $Context.WordToComplete
+    $attached = ''
+    if (-not $state.Pending -and $word.StartsWith('--') -and $word.Contains('=')) {
+        $parts = $word.Split('=', 2)
+        if (-not $options.ContainsKey($parts[0]) -or $options[$parts[0]] -ne 1) { return }
+        $state.Pending = $parts[0]
+        $attached = $parts[0] + '='
+    }
+    $valueWord = if ($attached) { $word.Substring($attached.Length) } else { $Context.WordToComplete }
     if ($state.Pending) {
-        if ($state.Pending -eq '--scope') { New-PS7CompletionResult -Candidate user,machine -WordToComplete $Context.WordToComplete }
-        elseif ($state.Pending -in @('--architecture','-a')) { New-PS7CompletionResult -Candidate x86,x64,arm,arm64 -WordToComplete $Context.WordToComplete }
+        if (($command -eq 'export' -and $state.Pending -in @('--output','-o')) -or
+            ($command -eq 'import' -and $state.Pending -in @('--import-file','-i'))) {
+            Complete-PS7LocalPath -WordToComplete $Context.WordToComplete -AttachedPrefix $attached
+            return
+        }
+        $values = @()
+        if ($state.Pending -eq '--scope') { $values = @('user','machine') }
+        elseif ($command -ne 'source' -and $state.Pending -in @('--architecture','-a')) { $values = @('x86','x64','arm','arm64') }
+        elseif ($command -eq 'source') {
+            switch ($state.Pending) {
+                { $_ -in @('--type','-t') } { $values = @('Microsoft.PreIndexed.Package','Microsoft.Rest') }
+                '--trust-level' { $values = @('none','trusted') }
+                { $_ -in @('--explicit','-e') } { if ($sourceCommand -eq 'edit') { $values = @('true','false') } }
+            }
+        }
+        if ($attached) {
+            New-PS7CompletionResult -Candidate @($values | ForEach-Object { $attached + $_ }) -WordToComplete $Context.WordToComplete
+        } else { New-PS7CompletionResult -Candidate $values -WordToComplete $valueWord }
         return
     }
     New-PS7CompletionResult -Candidate @($options.Keys) -WordToComplete $Context.WordToComplete

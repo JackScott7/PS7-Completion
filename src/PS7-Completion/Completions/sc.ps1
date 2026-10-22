@@ -39,10 +39,20 @@
     if ($state.Pending) {
         $candidates = switch ($state.Pending) {
             'state=' { @('active','inactive','all') }
-            'type=' { if ($operation -in @('query','queryex')) { @('driver','service','all','own','share','interact','kernel','filesys','rec','adapt') } else { @('own','share','interact','kernel','filesys','rec','adapt') } }
+            'type=' { if ($operation -in @('create','config') -and $state.Values['type='] -eq 'interact') { @('own','share') } elseif ($operation -in @('query','queryex')) { @('driver','service','all','own','share','interact','kernel','filesys','rec','adapt') } else { @('own','share','interact','kernel','filesys','rec','adapt') } }
             'start=' { @('boot','system','auto','demand','disabled','delayed-auto') }
             'error=' { @('normal','severe','critical','ignore') }
             'tag=' { @('yes','no') }
+            'obj=' { @('LocalSystem','NT AUTHORITY\LocalService','NT AUTHORITY\NetworkService') }
+            'depend=' {
+                $word = ConvertFrom-PS7Literal $Context.WordToComplete
+                $slash = $word.LastIndexOf('/')
+                $head = $word.Substring(0, $slash + 1)
+                $used = @($word.Split('/') | Select-Object -SkipLast 1)
+                if (-not $word.Substring($slash + 1).StartsWith('+')) {
+                    @(Get-PS7QueryData Services | Where-Object { $_ -notin $used -and $_ -ne $previous[1] } | ForEach-Object { $head + $_ })
+                }
+            }
             default { @() }
         }
         New-PS7CompletionResult -Candidate @($candidates) -WordToComplete $Context.WordToComplete
