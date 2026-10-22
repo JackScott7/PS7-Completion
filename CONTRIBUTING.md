@@ -1,7 +1,7 @@
 # Contributing
 
-Read [the specification](docs/specification.md) and
-[provider authoring guide](docs/authoring-completions.md) first.
+Read [the specification](https://github.com/JackScott7/PS7-Completion/wiki/Specification) and
+[provider authoring guide](https://github.com/JackScott7/PS7-Completion/wiki/Authoring-Completions) first.
 
 Use PowerShell 7.4+ on Windows. Keep runtime dependencies in the PowerShell
 standard library. Add offline Pester tests with each behavior change. Run
@@ -12,8 +12,9 @@ contacting remote SSH hosts. Use fixtures and mocks for system data.
 Keep provider changes separate from packaging changes when practical. A release
 requires all gates in the specification, not just passing scaffold tests.
 For each release, update `CHANGELOG.md` with added features, changed behavior and
-fixes, add matching notes under `docs/releases/`, and run
-`./scripts/Test-ReleaseMetadata.ps1`. Avoid em dashes in tracked project text.
+fixes, and run `./scripts/Test-ReleaseMetadata.ps1`. The release workflow uses
+that entry as its notes. Update the Wiki when technical guidance changes.
+Avoid em dashes in tracked project text.
 
 Use small commits containing each behavior and its tests. The current delivery is
 a private MVP; public WinGet publication is deferred. `scripts/Test.ps1 -SkipAnalyzer`
@@ -22,7 +23,7 @@ a newer PowerShell assembly. The current-engine job must always run analysis.
 Measure import/completion with `scripts/Measure-Completion.ps1`. Installer tests
 run only on explicitly disposable GitHub-hosted runners.
 
-For performance work, follow [the performance checklist](docs/performance-plan.md).
+For performance work, follow [the performance checklist](https://github.com/JackScott7/PS7-Completion/wiki/Performance-Plan).
 Measure the built payload as well as source; the installed runtime is assembled
 at build time while providers and the SSH parser remain lazy. Keep sample counts,
 machine, engine and OS identical for comparisons. CI retains informational timing

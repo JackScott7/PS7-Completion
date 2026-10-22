@@ -15,11 +15,6 @@ foreach ($category in @('Added','Changed','Fixed')) {
     $content = [regex]::Match($section, '(?ms)^### ' + $category + '\s*\r?\n(.*?)(?=^### |\z)').Groups[1].Value
     if ($content -notmatch '(?m)^- .+') { throw "The $version changelog needs a $category entry." }
 }
-$notes = Join-Path $root "docs/releases/v$version.md"
-if (-not (Test-Path -LiteralPath $notes)) { throw "Missing release notes: $notes" }
-if ((Get-Content -LiteralPath $notes -TotalCount 1) -ne "# PS7-Completion $version") {
-    throw "Release notes must start with '# PS7-Completion $version'."
-}
 $paths = @(& git -C $root ls-files --cached --others --exclude-standard)
 if ($LASTEXITCODE -ne 0 -or -not $paths.Count) { throw 'Cannot inspect tracked project files.' }
 $emDash = [char]0x2014

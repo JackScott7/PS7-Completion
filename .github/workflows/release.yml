@@ -58,8 +58,11 @@ jobs:
         run: |
           $build = Get-Content ./dist/release-build.json -Raw | ConvertFrom-Json
           $version = $build.Version
-          $notes = Join-Path 'docs/releases' "v$version.md"
-          if (-not (Test-Path $notes)) { throw "Missing release notes: $notes" }
+          $changelog = Get-Content ./CHANGELOG.md -Raw
+          $entry = [regex]::Match($changelog, '(?ms)^## ' + [regex]::Escape($version) + ' - [^\r\n]+\r?\n.*?(?=^## |\z)')
+          if (-not $entry.Success) { throw "Missing changelog entry for $version." }
+          $notes = Join-Path $env:RUNNER_TEMP "release-notes-$version.md"
+          Set-Content -LiteralPath $notes -Value $entry.Value.TrimEnd() -Encoding utf8
           $mode = @('--draft')
           if ($env:RELEASE_EVENT -eq 'push') {
             if ($env:RELEASE_REF -ne "v$version") { throw 'Tag and module version mismatch.' }

@@ -30,7 +30,7 @@
 
 The figures above come from three fresh processes per provider and 20 warm samples
 per case on one Windows 10.0.26300 / PowerShell 7.6.7 machine. See
-[performance evidence](docs/performance-plan.md) for the protocol and mixed lookup
+[performance evidence](https://github.com/JackScott7/PS7-Completion/wiki/Performance-Plan) for the protocol and mixed lookup
 results.
 
 ## 0.1.4 - Python routing and installer-only distribution
@@ -81,4 +81,4 @@ results.
 - Test Windows installer reinstall, upgrade, retained versions and owned-file removal.
 
 The repository remains private by owner request. Public WinGet distribution is
-deferred. See docs/mvp-status.md for measured evidence and remaining release work.
+deferred. See the [MVP status](https://github.com/JackScott7/PS7-Completion/wiki/MVP-Status) for measured evidence and remaining release work.
