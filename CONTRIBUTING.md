@@ -11,6 +11,9 @@ contacting remote SSH hosts. Use fixtures and mocks for system data.
 
 Keep provider changes separate from packaging changes when practical. A release
 requires all gates in the specification, not just passing scaffold tests.
+For each release, update `CHANGELOG.md` with added features, changed behavior and
+fixes, add matching notes under `docs/releases/`, and run
+`./scripts/Test-ReleaseMetadata.ps1`. Avoid em dashes in tracked project text.
 
 Use small commits containing each behavior and its tests. The current delivery is
 a private MVP; public WinGet publication is deferred. `scripts/Test.ps1 -SkipAnalyzer`

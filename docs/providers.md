@@ -1,4 +1,4 @@
-# Bundled provider support in v0.1.4
+# Bundled provider support in v0.1.5
 
 Providers support the explicit subsets below, not every native CLI feature. They
 never execute the command being completed. Unknown options conservatively suppress

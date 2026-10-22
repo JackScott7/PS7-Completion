@@ -28,7 +28,7 @@ before/after data; historical measurements alone cannot prove an optimization.
 
 ## Implementation and validation
 
-All six implementation items are complete locally; these changes are unreleased.
+All six implementation items are included in v0.1.5.
 273 Pester tests and PSScriptAnalyzer pass. The assembled payload passes import,
 lazy-provider and Python-routing checks. Existing timeout/reaping, exclusions,
 quoting and provider tests remain enabled. New tests cover cache-key equivalence,
@@ -70,7 +70,7 @@ sets, failed registration and performance-comparison failure cases.
 
 ## Same-machine results (2026-10-22)
 
-Baseline: v0.1.4 runtime. Candidate: assembled unreleased payload. Both used
+Baseline: v0.1.4 runtime. Candidate: assembled v0.1.5 payload. Both used
 PowerShell 7.6.7, Windows 10.0.26300, Intel64 Family 6 Model 186 Stepping 2,
 16 logical processors and normal user permissions on the same machine.
 Protocol: three fresh processes per provider (102 import measurements), 20 warm

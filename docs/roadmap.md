@@ -1,6 +1,6 @@
 # PS7-Completion roadmap
 
-Reconciled against the v0.1.4 release implementation on 2026-10-22.
+Reconciled against the v0.1.5 release implementation on 2026-10-22.
 The private MVP is implemented, with partial v0.5 work already present. Public
 distribution and full v0.5 acceptance remain open. Checked items reference the
 implementation and recorded evidence. Current patch results are in [release evidence](release-status.md).
@@ -44,7 +44,7 @@ Prerelease tags must have explicit prerelease metadata consistent with the modul
 manifest; do not use a four-component numeric version to imitate SemVer labels.
 
 The initial private MVP was stabilized on `release/0.1`; the inspected checkout
-is now `main` at v0.1.4. Later release branches remain planned and should not be
+is now `main` at v0.1.5. Later release branches remain planned and should not be
 created before their work begins.
 
 Each milestone inherits every earlier acceptance gate. A release cannot trade an
@@ -53,7 +53,7 @@ and additional providers do not block these four milestones.
 
 ## Current baseline
 
-Post-v0.1.4 performance work is tracked in the local
+The v0.1.5 performance work is tracked in the
 [six-item implementation checklist](performance-plan.md). It covers F3/F4/F6
 benchmarking, runtime import, lookup, resolution/cache and result-processing work;
 it does not close the remaining v0.5 syntax or installer acceptance gates.
@@ -63,26 +63,26 @@ custom providers, context-sensitive built-in providers, literal quoting, isolate
 queries, TTL caching, versioned builds and installer lifecycle CI. Test and measurement
 results, specific limitations and the private-delivery boundary are in MVP status.
 
-The manifest and registry now contain **v0.1.4 and 34 bundled providers**, versus
+The manifest and registry now contain **v0.1.5 and 34 bundled providers**, versus
 the original five-provider requirement. The additional providers and command-first
 menu ordering expand scope; they do not close the inherited release gates.
-See [provider coverage](providers.md), [release notes](releases/v0.1.4.md), and
+See [provider coverage](providers.md), [release notes](releases/v0.1.5.md), and
 the [changelog](../CHANGELOG.md).
 
-| Area | Position at v0.1.4 |
+| Area | Position at v0.1.5 |
 | --- | --- |
 | M1–M4 | Implemented; original MVP evidence recorded, with subsequent provider additions. |
 | M5 | Private packaging implemented; broader installer certification and public distribution remain open. |
-| M6 | Validation infrastructure and earlier results exist; 262 local tests and analyzer pass; cold-import target remains open. |
+| M6 | Validation infrastructure and 273 local tests pass; v0.1.5 improves import p95, but the cold-import target remains open. |
 | F1–F6 / v0.5 | Partial implementation, not accepted; see the progress table below. |
 | v0.10 / v1.0 | Future acceptance milestones; no completion claim. |
 
 Evidence freshness: the original 68-test MVP record is historical. The current
-patch passes 262 local tests and analyzer checks. Python-script routing, pip parity
+release passes 273 local tests and analyzer checks. Python-script routing, pip parity
 and installer-only packaging are implemented. See [release evidence](release-status.md)
 for current measurements and the gated publication workflow.
 
-## Branch `release/0.1` — achieve the MVP
+## Branch `release/0.1` - achieve the MVP
 
 ### M1. Foundation and configuration
 
@@ -250,7 +250,7 @@ measurements, interactive checklist, VM lifecycle report, immutable release asse
 license/signing decision and WinGet publication record. No unresolved MVP behavior
 may be reclassified as a v0.5 enhancement merely to close the milestone.
 
-## Branch `release/0.5` — broaden coverage and harden operation
+## Branch `release/0.5` - broaden coverage and harden operation
 
 Existing work contributes to these items, but none has complete v0.5 exit evidence:
 
@@ -298,7 +298,7 @@ tests, packaging validation scripts and CI. **Exit:** all MVP gates plus fixture
 for every advertised option/value rule, scale results within documented bounds,
 and successful v0.1 → v0.5 lifecycle evidence. No new provider is required.
 
-## Branch `release/0.10` — stabilize the v1 candidate
+## Branch `release/0.10` - stabilize the v1 candidate
 
 - [ ] **R1: Freeze the intended v1 contract.** Review public parameter behavior,
   metadata fields/status meanings, provider context, return types, exclusions,
@@ -327,7 +327,7 @@ matrix; candidate evidence; no unresolved critical/high issue affecting advertis
 behavior, data preservation, execution safety or installation. This is still a
 pre-1.0 release, not the stable-support announcement.
 
-## Branch `release/1.0` — ship the stable release
+## Branch `release/1.0` - ship the stable release
 
 - [ ] **S1: Adopt the stable contract.** Finalize support policy and versioning:
   breaking public/provider contract changes require a major release; compatible
