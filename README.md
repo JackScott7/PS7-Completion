@@ -1,6 +1,6 @@
 # PS7-Completion
 
-Native command completion for Windows and PowerShell 7.4+. Version **0.1.3**
+Native command completion for Windows and PowerShell 7.4+. Version **0.1.4**
 supports custom providers and 34 bundled providers. It parses argument context,
 quotes completion values, and loads provider files only when needed.
 
@@ -15,7 +15,7 @@ quotes completion values, and loads provider files only when needed.
 
 Completion menus put commands first, then options/arguments, alphabetically within
 each group. Providers offer documented syntax subsets without executing the tool
-being completed. See [0.1.3 release notes](docs/releases/v0.1.3.md).
+being completed. See [0.1.4 release notes](docs/releases/v0.1.4.md).
 
 This repository remains private. WinGet publication is deferred by project-owner
 decision; do not run the planned WinGet install command expecting a public package.
@@ -66,6 +66,12 @@ with the same executable names. Registration lasts for the current shell; add yo
 registration code after the module import in your own profile for future sessions.
 See [the authoring guide](docs/authoring-completions.md) and [example](examples/mytool.ps1).
 
+For a Python script, register `-CommandName mom.py`. The same provider then handles
+both `mom.py ...` and `python mom.py ...`, with script-relative arguments. See the
+[Python script guide](docs/authoring-completions.md#python-scripts-direct-and-interpreter-invocation)
+and [mom provider example](examples/mom.ps1). Interpreter routing uses the enabled
+bundled Python provider; direct invocation uses your existing PATH/PATHEXT setup.
+
 ## Development
 
 ```powershell
@@ -79,14 +85,13 @@ Install-Module PSScriptAnalyzer -RequiredVersion 1.24.0 -Scope CurrentUser
 ```
 
 Each build creates an isolated directory under `dist/builds/`; `dist/latest-build.json`
-lists its exact ZIP, installer and checksum files. The installer targets x64 Windows, requires elevation,
+lists its exact installer and checksum files. Without `-Installer`, the build only stages and validates the module payload. The installer targets x64 Windows, requires elevation,
 and installs under `C:\Program Files\PowerShell\Modules\PS7-Completion\<version>`.
 It does not install PowerShell or edit profiles. After installation, add
 `Import-Module PS7-Completion` to your PowerShell 7 profile explicitly.
 
-For ZIP installation, expand the ZIP's `PS7-Completion` folder into an existing
-PowerShell module directory, or import its versioned manifest by absolute path.
-The installer and ZIP contain the same module files. The installer retains old
+The installer is the only user-facing package. WinGet installs the same EXE using
+its Inno Setup unattended mode; no separate ZIP is distributed. The installer retains old
 versions on upgrade; restart PowerShell to load the newest version. Uninstall
 removes installer-owned versions while preserving added files. Remove your profile
 import manually after uninstall if you no longer use the module.

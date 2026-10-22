@@ -139,7 +139,7 @@ separate submission to microsoft/winget-pkgs. Templates are not publishable.
 
 ## Quality and release gates
 
-CI runs Pester 5 and PSScriptAnalyzer on Windows and builds the module archive.
+CI runs Pester 5 and PSScriptAnalyzer on Windows and validates the staged module payload; installer CI builds the distribution EXE.
 Test lazy loading, exclusions, prefix matching, quoted and partial arguments,
 cursor-in-middle behavior, trailing whitespace, failure isolation, and all provider
 contracts. Dynamic tests use fixtures/mocks and never kill processes or modify

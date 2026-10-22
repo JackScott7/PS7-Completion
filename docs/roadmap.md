@@ -1,9 +1,10 @@
 # PS7-Completion roadmap
 
-Validated against [the specification](specification.md) and the current scaffold
-on 2026-10-22. Updated after implementation: checked items have local/CI evidence
-in [MVP status](mvp-status.md). Unchecked broad release items still contain pending
-work; they are not all blockers for the owner-approved private-MVP delivery.
+Reconciled against the v0.1.4 release implementation on 2026-10-22.
+The private MVP is implemented, with partial v0.5 work already present. Public
+distribution and full v0.5 acceptance remain open. Checked items reference the
+implementation and recorded evidence. Current patch results are in [release evidence](release-status.md).
+See [MVP status](mvp-status.md) for the earlier MVP's local/CI results and limits.
 
 Scope amendment: the owner requested user-registerable providers, MIT licensing,
 small commits pushed to the private upstream, and a tested installable MVP while
@@ -11,9 +12,18 @@ keeping the repository private. The API therefore has four public commands,
 including Register-PS7CompletionProvider and New-PS7CompletionResult. Public WinGet
 publication is deferred; no visibility change or public package submission is planned.
 
+Distribution amendment (2026-10-22): ship only the Inno Setup EXE, plus checksums
+and WinGet metadata. No module ZIP is required or published. Direct installation
+and WinGet must use the same installer; validate WinGet install, upgrade and
+uninstall against it before claiming WinGet availability. Private repository
+visibility and deferred public submission remain unchanged.
+
 ## Milestones and branch strategy
 
-MVP means **v0.1.0 with the complete v0.1 specification**, including distribution.
+The original distributed MVP means **v0.1.0 with the complete v0.1 specification**,
+including public distribution. The amended private MVP delivers the runtime and
+installable private artifacts; it defers public WinGet gates without marking them
+passed. The outstanding performance target is recorded separately below.
 v0.5.0 improves coverage and reliability; v0.10.0 is the release-candidate baseline;
 v1.0.0 establishes a supported stable contract. Versions are semantic version
 components: v0.10 follows v0.5; it is not another spelling of v0.1.
@@ -33,8 +43,9 @@ also reach `main`; tag accepted releases `v0.1.0`, `v0.5.0`, `v0.10.0`, and `v1.
 Prerelease tags must have explicit prerelease metadata consistent with the module
 manifest; do not use a four-component numeric version to imitate SemVer labels.
 
-The private MVP is stabilized on `release/0.1`; later release branches remain
-planned and are not created before their work begins.
+The initial private MVP was stabilized on `release/0.1`; the inspected checkout
+is now `main` at v0.1.4. Later release branches remain planned and should not be
+created before their work begins.
 
 Each milestone inherits every earlier acceptance gate. A release cannot trade an
 unfinished earlier requirement for a later feature. Optional distribution channels
@@ -46,6 +57,25 @@ The framework supplies validated lazy callbacks, AST context, four public comman
 custom providers, context-sensitive built-in providers, literal quoting, isolated
 queries, TTL caching, versioned builds and installer lifecycle CI. Test and measurement
 results, specific limitations and the private-delivery boundary are in MVP status.
+
+The manifest and registry now contain **v0.1.4 and 34 bundled providers**, versus
+the original five-provider requirement. The additional providers and command-first
+menu ordering expand scope; they do not close the inherited release gates.
+See [provider coverage](providers.md), [release notes](releases/v0.1.4.md), and
+the [changelog](../CHANGELOG.md).
+
+| Area | Position at v0.1.4 |
+| --- | --- |
+| M1–M4 | Implemented; original MVP evidence recorded, with subsequent provider additions. |
+| M5 | Private packaging implemented; broader installer certification and public distribution remain open. |
+| M6 | Validation infrastructure and earlier results exist; 262 local tests and analyzer pass; cold-import target remains open. |
+| F1–F6 / v0.5 | Partial implementation, not accepted; see the progress table below. |
+| v0.10 / v1.0 | Future acceptance milestones; no completion claim. |
+
+Evidence freshness: the original 68-test MVP record is historical. The current
+patch passes 262 local tests and analyzer checks. Python-script routing, pip parity
+and installer-only packaging are implemented. See [release evidence](release-status.md)
+for current measurements and the gated publication workflow.
 
 ## Branch `release/0.1` — achieve the MVP
 
@@ -147,22 +177,30 @@ coverage or package-ID completion.
 
 ### M5. Installation, activation and release assets
 
-- [ ] Select the license and publisher, replace LICENSE placeholder, confirm name
-  and proposed WinGet ID availability, and set repository/release URLs.
-- [ ] Build a versioned module ZIP and Inno Setup EXE from one staged payload.
+- [x] Adopt MIT and replace the license placeholder; record private repository
+  metadata and the proposed `JackScott7.PS7-Completion` identity. See LICENSE,
+  packaging instructions and MVP status.
+- [ ] Confirm public publisher/package-ID availability and final public release
+  URLs before public distribution (deferred under the private-delivery amendment).
+- [x] Implement versioned Inno Setup EXE builds from a validated staged payload.
   Match manifest, directory, installer, tag and WinGet versions; fail on unresolved
-  placeholders, stale assets or unexpected payload files. Publish SHA256 for both.
-- [ ] Preserve stable AppId, machine-wide elevation, standard module directory and
-  uninstall metadata outside version folders. Reconcile installer architecture
-  directives with the declared x64-only support matrix and test unsupported hosts.
-- [ ] Prove silent install, reinstall, upgrade, uninstall and retained-version
-  behavior in a disposable VM. Remove only installer-owned files across versions;
-  preserve added user files. Test canceled elevation, failure cleanup, loaded-shell
-  behavior, new-shell discovery and the documented uninstall/reinstall downgrade path.
-- [ ] Leave profiles, PATH and PSModulePath unchanged; do not install PowerShell
+  placeholders, stale assets or unexpected payload files. Publish SHA256 for the installer.
+- [x] Implement stable AppId, machine-wide elevation, standard module directory,
+  uninstall metadata outside version folders and x64 architecture directives.
+  See `packaging/windows/installer.iss` and the recorded installer CI evidence.
+- [x] Record standard silent install, reinstall, synthetic-version upgrade,
+  retained-version/new-shell discovery and uninstall preserving user-added files
+  on a disposable hosted Windows runner. See MVP status and `scripts/Test-Installer.ps1`.
+- [ ] Certify unsupported OS/architecture hosts, canceled elevation, failure and
+  interruption cleanup, loaded-shell behavior, modified-owned-file recovery and
+  the documented uninstall/reinstall downgrade path. Refresh lifecycle evidence
+  for the exact release payload; the original synthetic upgrade is not a v0.5 test.
+- [x] Leave profiles, PATH and PSModulePath unchanged; do not install PowerShell
   implicitly. Document prerequisite checks, explicit profile import and restart
   requirements. Installation must not run completion queries.
-- [ ] Record the signing decision before publication. If signing, verify signatures
+- [x] Record private development installers as unsigned and supply checksums;
+  document prerequisites and manual activation without promising warning-free installs.
+- [ ] Resolve signing policy for public publication. If signing, verify signatures
   and timestamping before computing hashes; if unsigned, document that explicitly
   and test the intended installation path without promising warning-free installs.
 - [ ] Validate real WinGet manifests against the release installer URL/hash, test
@@ -170,13 +208,19 @@ coverage or package-ID completion.
   from GitHub publication. Verify public install/upgrade/uninstall after availability.
   Do not advertise WinGet availability while submission is pending.
 
-MVP implementation acceptance requires all internal gates and a tested manifest;
+Private packaging evidence: [MVP status](mvp-status.md), `scripts/Build.ps1`,
+`scripts/Test-Installer.ps1`, `scripts/New-WinGetManifest.ps1`,
+`tests/Core/Build.Tests.ps1` and `.github/workflows/ci.yml`. Checked packaging items
+describe implemented behavior and earlier recorded runs, not refreshed asset hashes.
+
+The original public MVP implementation acceptance requires all internal gates and a tested manifest;
 the **distributed MVP milestone** additionally requires WinGet acceptance and a
 public installation smoke test. External submission delays do not waive this gate.
+These public gates are explicitly deferred for the owner-approved private delivery.
 
 ### M6. MVP verification and documentation
 
-- [x] Run Pester 5, PSScriptAnalyzer and archive build in Windows CI; analyze runtime
+- [x] Run Pester 5, PSScriptAnalyzer and payload staging in Windows CI; analyze runtime
   and build/release scripts. Test both minimum and selected current supported PS7.
 - [x] Add executable-specific tests under `tests/Completions/`, core edge cases under
   `tests/Core/`, and synthetic fixtures. Mock data sources; never mutate live
@@ -188,6 +232,10 @@ public installation smoke test. External submission delays do not waive this gat
   requests per provider; report median and p95. Target p95 under 100 ms import and
   50 ms warm static completion; investigate and explicitly resolve misses before
   acceptance. Separately prove the 500 ms dynamic-query deadline and cleanup.
+  Recorded MVP result: cold-import p95 **110.13 ms**, above the 100 ms target;
+  original five-provider warm-static p95 values were below 50 ms. Keep this gate
+  open: v0.1.4 measures 253.49 ms import p95 with 34 providers. See release evidence
+  for the reference environment, sample counts and cleanup latency.
 - [x] Update README, authoring guide, contribution instructions, changelog and
   troubleshooting to reflect actual supported syntax, exclusions, cache semantics,
   prerequisites, install/upgrade/remove behavior and remaining limitations.
@@ -198,6 +246,21 @@ license/signing decision and WinGet publication record. No unresolved MVP behavi
 may be reclassified as a v0.5 enhancement merely to close the milestone.
 
 ## Branch `release/0.5` — broaden coverage and harden operation
+
+Existing work contributes to these items, but none has complete v0.5 exit evidence:
+
+| Item | Already present | Remaining acceptance work |
+| --- | --- | --- |
+| F1 | Finite scheduling/service/WinGet values; shared native-syntax helper consumes recognized `--option=value` operands and stops at `--`. | Safe local path suggestions; per-tool repeated/attached/end-of-options rules and fixtures. Shared-helper behavior does not establish support in the original five providers. |
+| F2 | Basic WinGet source subcommands, service key/value handling, SSH Include parsing and local linked-config support. | Detailed capability/version fixtures, schedule combinations, taskkill filter grammar and further safe SSH syntax coverage. |
+| F3 | Bounded SSH traversal, 128-entry cache, TTL and clear-generation semantics. | Large-input/result/memory measurements and refresh/race evidence across supported data sources. |
+| F4 | Minimum/current PowerShell CI and fresh-shell exclusion tests. | Broader native-tool version, missing-executable, read-denied and repeated-import compatibility matrix. |
+| F5 | Automated disposable-runner lifecycle, isolated builds, checksums and manifest generator. | Actual v0.1 → v0.5 upgrade evidence, expanded recovery coverage and public metadata/manifest validation when distribution resumes. |
+| F6 | Provider contract checks, authoring documentation and debug guidance. | Per-provider coverage reporting and evidence that contributor checks cover the expanded inventory. |
+
+Implementation references: `Private/NativeSyntax.ps1`, `Private/Queries.ps1`,
+`Workers/SshConfig.ps1`, provider files under `Completions/`, core/provider tests,
+and the build/installer scripts (runtime paths are under `src/PS7-Completion/`).
 
 - [ ] **F1: Complete option-value behavior for the supported inventory.** Add safe
   local path completion for SSH `-i`/`-F` and applicable WinGet import/export paths;
@@ -219,7 +282,7 @@ may be reclassified as a v0.5 enhancement merely to close the milestone.
   verify first-import exclusions and repeated imports without claiming restoration.
 - [ ] **F5: Repeat packaging validation.** Automate VM install/upgrade/uninstall
   reports and test upgrade from v0.1 to v0.5, retained versions, user-added files and
-  ZIP payload import. Build WinGet manifests from explicit release metadata and
+  staged payload import. Build WinGet manifests from explicit release metadata and
   reject placeholder/hash/version mismatches before submission.
 - [ ] **F6: Improve contributor feedback.** Add provider contract checks, per-provider
   coverage reports and a documented debugging recipe that does not emit private
@@ -246,7 +309,7 @@ and successful v0.1 → v0.5 lifecycle evidence. No new provider is required.
   repeated installs, uninstall after multiple retained versions and missing/modified
   owned files. Review installer identity, architecture, hashes and signing policy.
 - [ ] **R5: Freeze and verify release inputs.** Record dependency/compiler versions,
-  use clean staging, validate archive/installer payload equality, verify downloaded
+  use clean staging, validate staged/installed payload equality, verify downloaded
   asset hashes, and audit workflow permissions and secret handling. Release jobs
   must select the current build's exact assets, not every file found in dist.
 - [ ] **R6: Publish release candidates with a triage window.** Record candidate
@@ -272,7 +335,7 @@ pre-1.0 release, not the stable-support announcement.
   record any non-blocking limitations with reproducible scope.
 - [ ] **S3: Publish the verified artifacts.** Align version metadata, changelog,
   license and documentation; verify signatures according to the adopted policy,
-  publish immutable ZIP/installer/checksums, submit manifests and verify public
+  publish immutable installer/checksums, submit manifests and verify public
   WinGet install/upgrade/uninstall. Never replace a released binary in place.
 - [ ] **S4: Establish maintenance.** Publish issue/security reporting instructions,
   triage ownership, supported-version policy and a patch-release checklist. Document
@@ -292,8 +355,13 @@ Implementation order: M1 → M2 → M3 → M4 → M6 acceptance; M5 packaging ca
 alongside runtime work but publication waits for M4/M6. Then F1–F6 → R1–R6 → S1–S5.
 License/publisher/signing decisions in M5 should be resolved early, not on release day.
 
+Scope addition already implemented in v0.1.2/v0.1.4: 29 providers beyond the original
+five, for 34 total. Their documented subsets need regression coverage; they do not
+replace the original five-provider acceptance requirements. Further providers are
+optional and are not required for the remaining milestones.
+
 Deferred beyond this roadmap unless the specification is explicitly amended:
-PowerShell Gallery, ARM64 installers, per-user installation, additional providers,
+PowerShell Gallery, ARM64 installers, per-user installation,
 cross-platform support, Windows PowerShell 5.1, persistent configuration commands,
 automatic profile edits, completer restoration/detection and remote/network queries.
 Gallery may later reuse the same module payload, but is not a v1 acceptance gate.

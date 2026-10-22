@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.1.4 — Python routing and installer-only distribution
+
+- Distribute only the Inno Setup installer and checksums; remove module ZIP output.
+  WinGet continues to target the same installer. Builds without `-Installer` stage
+  and validate the payload without producing release assets.
+
+- Delegate `python -m pip` to the registered pip provider for parity with direct
+  `pip`, including full argument context, exclusions and custom replacements.
+
+- Route registered `.py` providers through the bundled Python completer, sharing
+  script-relative context with direct script invocation. Preserve interpreter and
+  `python -m pip` completion, lazy loading and provider failure isolation.
+- Document registration for both invocation forms and add a task-manager example.
+
 ## 0.1.3 — baseline network and developer tools
 
 - Add Windows ipconfig, tracert, nslookup, and netstat providers.
