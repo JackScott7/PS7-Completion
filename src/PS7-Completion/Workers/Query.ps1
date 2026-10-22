@@ -4,14 +4,27 @@ $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 try {
     $request = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($RequestBase64)) | ConvertFrom-Json -AsHashtable
+    $queryClock = [Diagnostics.Stopwatch]::StartNew()
     $dependencies = @()
     $data = switch ($request.Kind) {
         'Processes' {
-            Get-Process | Select-Object -First 4096 | ForEach-Object { @{ Id = [string]$_.Id; Name = $_.ProcessName + '.exe' } }
+            $processes = [Diagnostics.Process]::GetProcesses()
+            try {
+                $count = 0
+                foreach ($process in $processes) {
+                    if ($count -ge 4096) { break }
+                    # A process may exit between enumeration and reading its name.
+                    try { @{ Id = [string]$process.Id; Name = $process.ProcessName + '.exe' }; $count++ }
+                    catch { continue }
+                }
+            }
+            finally { foreach ($process in $processes) { $process.Dispose() } }
         }
         'Services' {
             $services = [System.ServiceProcess.ServiceController]::GetServices()
-            try { $services | Select-Object -First 4096 -ExpandProperty ServiceName }
+            try {
+                for ($index = 0; $index -lt [Math]::Min(4096, $services.Length); $index++) { $services[$index].ServiceName }
+            }
             finally { foreach ($service in $services) { $service.Dispose() } }
         }
         'Tasks' {
@@ -22,7 +35,9 @@ try {
                 $queue = [Collections.Generic.Queue[string]]::new()
                 $queue.Enqueue('\')
                 $count = 0
-                while ($queue.Count -and $count -lt 4096) {
+                $folders = 0
+                while ($queue.Count -and $count -lt 4096 -and $folders -lt 4096) {
+                    $folders++
                     $folder = $scheduler.GetFolder($queue.Dequeue())
                     try {
                         foreach ($task in $folder.GetTasks(1)) {
@@ -40,6 +55,13 @@ try {
         }
         default { throw 'Unknown query kind.' }
     }
-    @{ Data = @($data); Dependencies = @($dependencies) } | ConvertTo-Json -Depth 8 -Compress
+    $response = @{ Data = @($data); Dependencies = @($dependencies) }
+    if ($request.ContainsKey('Measure') -and $request.Measure) {
+        $response.Metrics = @{ CollectionMs = $queryClock.Elapsed.TotalMilliseconds }
+        $serializationClock = [Diagnostics.Stopwatch]::StartNew()
+        $null = $response | ConvertTo-Json -Depth 8 -Compress
+        $response.Metrics.SerializationMs = $serializationClock.Elapsed.TotalMilliseconds
+    }
+    $response | ConvertTo-Json -Depth 8 -Compress
 }
 catch { exit 1 }

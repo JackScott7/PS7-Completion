@@ -1,5 +1,22 @@
 BeforeAll { $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path }
 Describe 'Release payload' {
+    It 'assembles an importable lazy runtime with Python routing' {
+        $build = & (Join-Path $projectRoot 'scripts/Build.ps1')
+        $modulePath = Join-Path $build.Payload 'PS7-Completion.psm1'
+        Get-Content $modulePath -Raw | Should -Not -Match '# BEGIN RUNTIME LOAD'
+        try {
+            Get-Module PS7-Completion | Remove-Module -Force
+            Import-Module (Join-Path $build.Payload 'PS7-Completion.psd1') -Force
+            @(Get-PS7CompletionProvider).Count | Should -Be 34
+            @(Get-PS7CompletionProvider | Where-Object Loaded).Count | Should -Be 0
+            $line = 'python -m pip ins'
+            [Management.Automation.CommandCompletion]::CompleteInput($line,$line.Length,$null).CompletionMatches.CompletionText | Should -Contain install
+        }
+        finally {
+            Get-Module PS7-Completion | Remove-Module -Force
+            Import-Module (Join-Path $projectRoot 'src/PS7-Completion/PS7-Completion.psd1') -Force
+        }
+    }
     It 'stages a clean versioned payload without ZIP distribution assets' {
         $build = & (Join-Path $projectRoot 'scripts/Build.ps1')
         $build.Assets.Count | Should -Be 0

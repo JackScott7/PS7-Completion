@@ -3,6 +3,39 @@ BeforeAll {
 }
 Describe 'Bounded query cache' {
     BeforeEach { InModuleScope PS7-Completion { Clear-PS7CompletionCache } }
+    It 'shares equivalent lexical SSH paths but keeps different directories distinct' {
+        InModuleScope PS7-Completion -Parameters @{ Root = $TestDrive } {
+            param($Root)
+            Mock Read-PS7SshConfig { @{ Hosts=@('one'); Dependencies=@() } }
+            $first = Join-Path $Root 'config'
+            Get-PS7QueryData SshHosts $first | Out-Null
+            Get-PS7QueryData SshHosts (Join-Path $Root './config') | Out-Null
+            Get-PS7QueryData SshHosts (Join-Path $Root 'other/config') | Out-Null
+            Should -Invoke Read-PS7SshConfig -Times 2 -Exactly
+        }
+    }
+    It 'tracks shared SSH dependencies only once and invalidates file edits' {
+        $root = Join-Path $TestDrive 'root'
+        $child = Join-Path $TestDrive 'child'
+        Set-Content $child 'Host first'
+        Set-Content $root @("Include `"$child`"", "Include `"$child`"")
+        InModuleScope PS7-Completion -Parameters @{ Root=$root; Child=$child } {
+            param($Root,$Child)
+            $parsed = Read-PS7SshConfig $Root
+            $paths = @($parsed.Dependencies | ForEach-Object Path)
+            $paths.Count | Should -Be @($paths | Sort-Object -Unique).Count
+            Get-PS7QueryData SshHosts $Root | Should -Contain first
+            Set-Content $Child 'Host updated-longer'
+            Get-PS7QueryData SshHosts $Root | Should -Contain updated-longer
+        }
+    }
+    It 'includes link targets in dependency identity even with equal size and timestamp' {
+        InModuleScope PS7-Completion {
+            $a = [pscustomobject]@{ PSIsContainer=$true; LastWriteTimeUtc=[datetime]'2026-01-01'; Attributes='ReparsePoint'; LinkTarget='C:\first' }
+            $b = [pscustomobject]@{ PSIsContainer=$true; LastWriteTimeUtc=[datetime]'2026-01-01'; Attributes='ReparsePoint'; LinkTarget='C:\second' }
+            (Get-PS7DependencyStamp -Path 'link' -Item $a) | Should -Not -Be (Get-PS7DependencyStamp -Path 'link' -Item $b)
+        }
+    }
     It 'reads SSH aliases in process without starting a worker' {
         $config = Join-Path $TestDrive 'config'
         Set-Content $config 'Host strawberryvps'
@@ -39,7 +72,8 @@ Describe 'Bounded query cache' {
             Get-PS7QueryData SshHosts a | Out-Null
             Get-PS7QueryData SshHosts b | Out-Null
             Get-PS7QueryData Services | Out-Null
-            $script:Cache['SshHosts|a'].Created -= 31 * [Diagnostics.Stopwatch]::Frequency
+            $path = [IO.Path]::GetFullPath('a', $ExecutionContext.SessionState.Path.CurrentFileSystemLocation.Path)
+            $script:Cache["SshHosts|$path"].Created -= 31 * [Diagnostics.Stopwatch]::Frequency
             Get-PS7QueryData SshHosts a | Out-Null
             Should -Invoke Read-PS7SshConfig -Times 3 -Exactly
             Should -Invoke Invoke-PS7QueryProcess -Times 1 -Exactly

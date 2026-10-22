@@ -7,7 +7,8 @@ function New-PS7CompletionContext {
     $index = 0
     $supported = $null -ne $CommandAst
     if (-not $supported) { throw 'CommandAst is required.' }
-    foreach ($element in @($CommandAst.CommandElements | Select-Object -Skip 1)) {
+    for ($elementIndex = 1; $elementIndex -lt $CommandAst.CommandElements.Count; $elementIndex++) {
+        $element = $CommandAst.CommandElements[$elementIndex]
         if ($element.Extent.StartOffset -gt $CursorPosition) { break }
         $length = [Math]::Min($element.Extent.Text.Length, $CursorPosition - $element.Extent.StartOffset)
         $raw = $element.Extent.Text.Substring(0, $length)
@@ -31,7 +32,7 @@ function New-PS7CompletionContext {
         Arguments = $arguments.ToArray()
         ArgumentIndex = $index
         Values = $values.ToArray()
-        PreviousArguments = @($values | Select-Object -First $index)
+        PreviousArguments = $values.GetRange(0, [Math]::Min($index, $values.Count)).ToArray()
         IsSupported = $supported
     }
 }
@@ -39,6 +40,9 @@ function New-PS7CompletionContext {
 function ConvertFrom-PS7Literal {
     param([AllowEmptyString()][string] $Text)
     if (-not $Text) { return '' }
+    # Unquoted words in this narrow alphabet are literal command arguments. All
+    # quoting, metacharacters, colon parameters and incomplete syntax use the parser.
+    if ($Text -match '^[\p{L}\p{N}_./\\-]+$') { return $Text }
     $tokens = $null
     $errors = $null
     $ast = [Management.Automation.Language.Parser]::ParseInput("ps7literal $Text", [ref]$tokens, [ref]$errors)
@@ -95,9 +99,26 @@ function Invoke-PS7Provider {
         $script:Registry[$Name].Status = 'Loaded'
         # Preserve the command/operand distinction even when punctuation would
         # otherwise sort flags ahead of subcommands in the completion menu.
-        $results | Sort-Object -Property CompletionText -Unique -CaseSensitive |
-            Sort-Object -Property @{ Expression = { if ($_.ResultType -eq 'Command') { 0 } else { 1 } } }, CompletionText -CaseSensitive |
-            Select-Object -First 512
+        $seen = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+        $commands = [Collections.Generic.List[string]]::new()
+        $others = [Collections.Generic.List[string]]::new()
+        $byText = [Collections.Generic.Dictionary[string,object]]::new([StringComparer]::Ordinal)
+        foreach ($result in $results) {
+            if (-not $seen.Add($result.CompletionText)) { continue }
+            $byText.Add($result.CompletionText, $result)
+            if ($result.ResultType -eq 'Command') { $commands.Add($result.CompletionText) }
+            else { $others.Add($result.CompletionText) }
+        }
+        $commands.Sort([StringComparer]::CurrentCulture)
+        $others.Sort([StringComparer]::CurrentCulture)
+        $count = 0
+        foreach ($group in @($commands, $others)) {
+            foreach ($text in $group) {
+                if ($count -ge 512) { return }
+                $byText[$text]
+                $count++
+            }
+        }
     }
     catch {
         if ($script:Registry.ContainsKey($Name)) { $script:Registry[$Name].Status = 'Failed' }

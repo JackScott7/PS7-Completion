@@ -1,9 +1,17 @@
+function Read-PS7SshConfig {
+    param([string] $Path, [Diagnostics.Stopwatch] $Clock)
+    # The worker replaces this trampoline in module scope. Static completion and
+    # import never parse or load the SSH traversal implementation.
+    . (Join-Path $script:ModuleRoot 'Workers/SshConfig.ps1')
+    Read-PS7SshConfig -Path $Path -Clock $Clock
+}
+
 function Get-PS7DependencyStamp {
-    param([string] $Path)
-    $item = Get-Item -LiteralPath $Path -Force -ErrorAction Ignore
+    param([string] $Path, $Item)
+    if (-not $PSBoundParameters.ContainsKey('Item')) { $item = Get-Item -LiteralPath $Path -Force -ErrorAction Ignore }
     if ($null -eq $item) { return "$Path|missing" }
     $length = if ($item.PSIsContainer) { -1 } else { $item.Length }
-    return "$Path|$length|$($item.LastWriteTimeUtc.Ticks)"
+    return "$Path|$length|$($item.LastWriteTimeUtc.Ticks)|$($item.Attributes)|$($item.LinkTarget)"
 }
 
 function Invoke-PS7QueryProcess {
@@ -35,7 +43,13 @@ function Invoke-PS7QueryProcess {
         $json = $output.GetAwaiter().GetResult()
         if ($errors.GetAwaiter().GetResult()) { throw 'Completion query worker wrote an error.' }
         if ($json.Length -gt 2097152) { throw 'Query output exceeds its size limit.' }
-        return ($json | ConvertFrom-Json -AsHashtable -ErrorAction Stop)
+        $parseClock = [Diagnostics.Stopwatch]::StartNew()
+        $response = $json | ConvertFrom-Json -AsHashtable -ErrorAction Stop
+        if ($Request.ContainsKey('Measure') -and $Request.Measure -and $response.ContainsKey('Metrics')) {
+            $response.Metrics.ParseMs = $parseClock.Elapsed.TotalMilliseconds
+            $response.Metrics.TotalMs = $clock.Elapsed.TotalMilliseconds
+        }
+        return $response
     }
     finally {
         if ($started -and -not $process.HasExited) {
@@ -49,6 +63,9 @@ function Invoke-PS7QueryProcess {
 
 function Get-PS7QueryData {
     param([ValidateSet('Processes','Services','Tasks','SshHosts')][string] $Kind, [string] $Path = '')
+    if ($Kind -eq 'SshHosts' -and $Path) {
+        $Path = [IO.Path]::GetFullPath($Path, $ExecutionContext.SessionState.Path.CurrentFileSystemLocation.Path)
+    }
     $key = "$Kind|$Path"
     $now = [Diagnostics.Stopwatch]::GetTimestamp()
     if ($script:Cache.ContainsKey($key)) {
@@ -56,6 +73,7 @@ function Get-PS7QueryData {
         $valid = (($now - $entry.Created) / [Diagnostics.Stopwatch]::Frequency) -lt 30
         if ($valid) {
             foreach ($dependency in $entry.Dependencies) {
+                if ($null -ne $script:QueryClock -and $script:QueryClock.ElapsedMilliseconds -ge 500) { throw 'Completion query deadline exceeded.' }
                 if ((Get-PS7DependencyStamp $dependency.Path) -ne $dependency.Stamp) { $valid = $false; break }
             }
         }

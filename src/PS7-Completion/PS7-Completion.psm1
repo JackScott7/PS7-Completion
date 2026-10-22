@@ -4,18 +4,18 @@ Set-StrictMode -Version Latest
 if (-not $IsWindows) { throw 'PS7-Completion supports Windows only.' }
 $script:ModuleRoot = $PSScriptRoot
 $script:Registry = @{}
+$script:CommandOwners = @{}
 $script:Providers = @{}
 $script:Cache = @{}
 $script:CacheGeneration = 0
 $script:QueryClock = $null
+# BEGIN RUNTIME LOAD
 foreach ($folder in @('Private', 'Public')) {
     $files = [IO.Directory]::GetFiles([IO.Path]::Combine($PSScriptRoot, $folder), '*.ps1')
     [Array]::Sort($files, [StringComparer]::Ordinal)
     foreach ($file in $files) { . $file }
 }
-# The local SSH parser is small and must be available in module scope on the
-# first completion, without creating a second PowerShell process.
-. (Join-Path $PSScriptRoot 'Workers/SshConfig.ps1')
+# END RUNTIME LOAD
 if ($null -eq $Configuration) { throw 'Configuration cannot be null.' }
 foreach ($key in $Configuration.Keys) { if ($key -ne 'Exclude') { throw "Unknown configuration key: $key" } }
 $script:Excluded = @()
@@ -67,6 +67,7 @@ Invoke-PS7Provider -Name '$name' -WordToComplete `$wordToComplete -CommandAst `$
 "@)
         Register-ArgumentCompleter -Native -CommandName $entry.Commands -ScriptBlock $callback
         $script:Registry[$name] = @{ Commands = $entry.Commands; File = $entry.File; Enabled = $true; Status = 'Registered'; Source = 'BuiltIn' }
+        foreach ($command in $entry.Commands) { $script:CommandOwners[$command] = $name }
     }
 }
 Export-ModuleMember -Function Get-PS7CompletionProvider, Clear-PS7CompletionCache, Register-PS7CompletionProvider, New-PS7CompletionResult

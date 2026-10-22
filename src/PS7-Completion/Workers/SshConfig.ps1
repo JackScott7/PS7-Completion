@@ -1,4 +1,4 @@
-function Read-PS7SshConfig {
+function script:Read-PS7SshConfig {
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', 'Clock', Justification = 'Nested time-budget checks read the enclosing parser clock.')]
     [CmdletBinding()]
     param([Parameter(Mandatory)][string] $Path, [Diagnostics.Stopwatch] $Clock)
@@ -6,11 +6,20 @@ function Read-PS7SshConfig {
         Hosts = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
         Visited = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
         Dependencies = [Collections.Generic.List[object]]::new()
+        DependencyPaths = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+        Items = @{}
         Bytes = 0L
     }
     $sshRoot = Join-Path ([Environment]::GetFolderPath('UserProfile')) '.ssh'
     function Assert-TimeBudget {
         if ($Clock -and $Clock.ElapsedMilliseconds -ge 500) { throw 'SSH config read deadline exceeded.' }
+    }
+    function Get-LocalItem([string] $Candidate) {
+        # Metadata is reused only within this bounded parse, never across requests.
+        if (-not $state.Items.ContainsKey($Candidate)) {
+            $state.Items[$Candidate] = Get-Item -LiteralPath $Candidate -Force -ErrorAction Ignore
+        }
+        return $state.Items[$Candidate]
     }
     function Test-LocalPath([string] $Candidate, [int] $LinkDepth = 0) {
         Assert-TimeBudget
@@ -24,7 +33,7 @@ function Read-PS7SshConfig {
         for ($part = $full; $part; $part = [IO.Path]::GetDirectoryName($part)) { $parts.Push($part) }
         foreach ($part in $parts) {
             Assert-TimeBudget
-            $item = Get-Item -LiteralPath $part -Force -ErrorAction Ignore
+            $item = Get-LocalItem $part
             if ($item -and ($item.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
                 $target = $item.LinkTarget
                 if (-not $target) { return $false }
@@ -38,11 +47,12 @@ function Read-PS7SshConfig {
         return $true
     }
     function Add-Dependency([string] $Candidate) {
-        $item = Get-Item -LiteralPath $Candidate -Force -ErrorAction Ignore
+        if (-not $state.DependencyPaths.Add($Candidate)) { return }
+        $item = Get-LocalItem $Candidate
         $stamp = "$Candidate|missing"
         if ($item) {
             $length = if ($item.PSIsContainer) { -1 } else { $item.Length }
-            $stamp = "$Candidate|$length|$($item.LastWriteTimeUtc.Ticks)"
+            $stamp = "$Candidate|$length|$($item.LastWriteTimeUtc.Ticks)|$($item.Attributes)|$($item.LinkTarget)"
         }
         $state.Dependencies.Add(@{ Path = $Candidate; Stamp = $stamp })
     }
@@ -53,7 +63,7 @@ function Read-PS7SshConfig {
         $full = [IO.Path]::GetFullPath($Candidate)
         if (-not $state.Visited.Add($full)) { return }
         Add-Dependency $full
-        $item = Get-Item -LiteralPath $full -Force -ErrorAction Ignore
+        $item = Get-LocalItem $full
         if (-not $item -or $item.PSIsContainer) { return }
         if ($item.Length -gt 1048576 -or ($state.Bytes + $item.Length) -gt 4194304) { throw 'SSH config size limit exceeded.' }
         $state.Bytes += $item.Length

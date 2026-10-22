@@ -27,10 +27,9 @@ function Register-PS7CompletionProvider {
             throw 'Replacement must retain the same executable names; restart the shell to change them.'
         }
     }
-    foreach ($existing in $script:Registry.Keys) {
-        if ($existing -eq $Name -or -not $script:Registry[$existing].Enabled) { continue }
-        foreach ($command in $CommandName) {
-            if ($command -in $script:Registry[$existing].Commands) { throw "Executable '$command' belongs to provider '$existing'." }
+    foreach ($command in $CommandName) {
+        if ($script:CommandOwners.ContainsKey($command) -and $script:CommandOwners[$command] -ne $Name) {
+            throw "Executable '$command' belongs to provider '$($script:CommandOwners[$command])'."
         }
     }
     $resolved = $null
@@ -46,6 +45,7 @@ Invoke-PS7Provider -Name '$Name' -WordToComplete `$wordToComplete -CommandAst `$
 "@)
     Register-ArgumentCompleter -Native -CommandName $CommandName -ScriptBlock $callback
     $script:Registry[$Name] = @{ Commands = @($CommandName); File = $resolved; Enabled = $true; Status = 'Registered'; Source = 'Custom' }
+    foreach ($command in $CommandName) { $script:CommandOwners[$command] = $Name }
     $script:Providers.Remove($Name)
     if ($PSCmdlet.ParameterSetName -eq 'ScriptBlock') { $script:Providers[$Name] = $ScriptBlock; $script:Registry[$Name].Status = 'Loaded' }
     Clear-PS7CompletionCache

@@ -29,9 +29,8 @@ function Get-PS7PythonScriptRoute {
         if ([IO.Path]::GetExtension($target) -ine '.py') { return }
         $skip = $index + 1
     }
-    foreach ($name in $script:Registry.Keys) {
-        $entry = $script:Registry[$name]
-        if (-not $entry.Enabled -or $target -notin $entry.Commands) { continue }
+    if ($script:CommandOwners.ContainsKey($target)) {
+        $name = $script:CommandOwners[$target]
         # Keep the original AST/absolute cursor, but expose target-relative args.
         return [pscustomobject]@{
             Name = $name

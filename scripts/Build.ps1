@@ -17,6 +17,22 @@ $payload = Join-Path $stage "payload/PS7-Completion/$releaseVersion"
 New-Item -ItemType Directory -Path $payload -Force | Out-Null
 Copy-Item -Path "$source/*" -Destination $payload -Recurse
 Copy-Item -LiteralPath (Join-Path $root 'LICENSE') -Destination $payload
+# Assemble helpers at build time: installed imports parse one runtime file rather
+# than opening/dot-sourcing each helper. Provider files remain genuinely lazy.
+$modulePath = Join-Path $payload 'PS7-Completion.psm1'
+$moduleText = Get-Content -LiteralPath $modulePath -Raw
+$helpers = foreach ($folder in @('Private','Public')) {
+    $paths = [IO.Directory]::GetFiles((Join-Path $payload $folder), '*.ps1')
+    [Array]::Sort($paths, [StringComparer]::Ordinal)
+    foreach ($path in $paths) { [IO.File]::ReadAllText($path) }
+}
+$pattern = '(?s)# BEGIN RUNTIME LOAD.*?# END RUNTIME LOAD'
+if ([regex]::Matches($moduleText, $pattern).Count -ne 1) { throw 'Runtime assembly markers missing or ambiguous.' }
+$assembled = [regex]::Replace($moduleText, $pattern, [Text.RegularExpressions.MatchEvaluator]{  $helpers -join "`n" })
+$tokens = $null; $parseErrors = $null
+$null = [Management.Automation.Language.Parser]::ParseInput($assembled, [ref]$tokens, [ref]$parseErrors)
+if ($parseErrors.Count) { throw 'Assembled runtime failed syntax validation.' }
+Set-Content -LiteralPath $modulePath -Value $assembled -Encoding utf8
 if ($Version) {
     $manifestPath = Join-Path $payload 'PS7-Completion.psd1'
     $manifestText = Get-Content -LiteralPath $manifestPath -Raw
