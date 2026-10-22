@@ -1,6 +1,6 @@
 #Requires -Version 7.4
 [CmdletBinding()]
-param([Parameter(Mandatory)][switch] $DisposableRunner)
+param([Parameter(Mandatory)][switch] $DisposableRunner, [string] $BuildMetadata)
 $ErrorActionPreference = 'Stop'
 if (-not $DisposableRunner -or $env:GITHUB_ACTIONS -ne 'true' -or $env:RUNNER_ENVIRONMENT -ne 'github-hosted') {
     throw 'Installer lifecycle tests require an explicitly disposable GitHub-hosted runner.'
@@ -10,7 +10,8 @@ $installRoot = Join-Path $env:ProgramFiles 'PowerShell/Modules/PS7-Completion'
 if (Test-Path -LiteralPath $installRoot) { throw 'Refusing to test over an existing module installation.' }
 $beforePath = $env:PATH
 $beforeModulePath = $env:PSModulePath
-$base = & (Join-Path $PSScriptRoot 'Build.ps1') -Installer
+$base = if ($BuildMetadata) { Get-Content -LiteralPath $BuildMetadata -Raw | ConvertFrom-Json } else { & (Join-Path $PSScriptRoot 'Build.ps1') -Installer }
+if (-not $base.Installer -or -not (Test-Path -LiteralPath $base.Installer)) { throw 'A built installer is required.' }
 $nextVersion = [version]$base.Version
 $next = & (Join-Path $PSScriptRoot 'Build.ps1') -Installer -Version "$($nextVersion.Major).$($nextVersion.Minor).$($nextVersion.Build + 1)"
 function Invoke-InstallerFile([string] $File, [string] $Log) {
@@ -22,6 +23,14 @@ New-Item -ItemType Directory $logRoot -Force | Out-Null
 Invoke-InstallerFile $base.Installer (Join-Path $logRoot 'install.log')
 $baseManifest = Join-Path $installRoot "$($base.Version)/PS7-Completion.psd1"
 if (-not (Test-Path $baseManifest)) { throw 'Initial installation is missing.' }
+foreach ($file in Get-ChildItem -LiteralPath $base.Payload -Recurse -File) {
+    $relative = [IO.Path]::GetRelativePath($base.Payload, $file.FullName)
+    $installed = Join-Path $installRoot "$($base.Version)/$relative"
+    if (-not (Test-Path -LiteralPath $installed) -or
+        (Get-FileHash -LiteralPath $installed).Hash -ne (Get-FileHash -LiteralPath $file.FullName).Hash) {
+        throw "Installed payload mismatch: $relative"
+    }
+}
 Invoke-InstallerFile $base.Installer (Join-Path $logRoot 'reinstall.log')
 $userFile = Join-Path $installRoot "$($base.Version)/user-added.txt"
 Set-Content -LiteralPath $userFile 'Must survive uninstall'

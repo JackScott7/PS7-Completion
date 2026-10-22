@@ -1,16 +1,14 @@
 BeforeAll { $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path }
 Describe 'Release payload' {
-    It 'builds a clean versioned archive with MIT license and matching manifest' {
+    It 'stages a clean versioned payload without ZIP distribution assets' {
         $build = & (Join-Path $projectRoot 'scripts/Build.ps1')
-        $build.Archive | Should -Exist
-        $build.Checksums | Should -Exist
+        $build.Assets.Count | Should -Be 0
+        $build.Checksums | Should -BeNullOrEmpty
+        @(Get-ChildItem (Split-Path (Split-Path (Split-Path $build.Payload))) -Recurse -Filter *.zip).Count | Should -Be 0
         $manifest = Test-ModuleManifest (Join-Path $build.Payload 'PS7-Completion.psd1')
         $manifest.Version.ToString() | Should -Be $build.Version
         Get-Content (Join-Path $build.Payload 'LICENSE') -Raw | Should -Match '^MIT License'
-        Get-Content $build.Checksums -Raw | Should -Match ((Get-FileHash $build.Archive).Hash.ToLowerInvariant())
-        $expanded = Join-Path $TestDrive 'expanded'
-        Expand-Archive $build.Archive $expanded
-        Join-Path $expanded "PS7-Completion/$($build.Version)/Workers/Query.ps1" | Should -Exist
+        Join-Path $build.Payload 'Workers/Query.ps1' | Should -Exist
     }
     It 'keeps source version unchanged for upgrade fixtures' {
         $sourceManifest = Join-Path $projectRoot 'src/PS7-Completion/PS7-Completion.psd1'

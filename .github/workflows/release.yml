@@ -1,6 +1,11 @@
-name: Draft release
+name: Release
 on:
   workflow_dispatch:
+  push:
+    tags: ['v*']
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 permissions:
   contents: write
 jobs:
@@ -21,15 +26,54 @@ jobs:
           }
           'C:\Program Files (x86)\Inno Setup 6' >> $env:GITHUB_PATH
       - run: ./scripts/Test.ps1
+      - name: Test minimum PowerShell
+        run: |
+          $base = 'https://github.com/PowerShell/PowerShell/releases/download/v7.4.0'
+          $archive = Join-Path $env:RUNNER_TEMP 'PowerShell-7.4.0-win-x64.zip'
+          Invoke-WebRequest "$base/PowerShell-7.4.0-win-x64.zip" -OutFile $archive
+          $hashFile = Join-Path $env:RUNNER_TEMP 'powershell-hashes.sha256'
+          Invoke-WebRequest "$base/hashes.sha256" -OutFile $hashFile
+          $line = Get-Content $hashFile | Where-Object { $_ -match 'PowerShell-7.4.0-win-x64.zip\s*$' }
+          if (-not $line -or (Get-FileHash $archive).Hash -ne ($line -split '\s+')[0]) { throw 'PowerShell archive checksum mismatch.' }
+          Expand-Archive $archive (Join-Path $env:RUNNER_TEMP 'pwsh74')
+          & (Join-Path $env:RUNNER_TEMP 'pwsh74/pwsh.exe') -NoProfile -File ./scripts/Test.ps1 -SkipAnalyzer
+          if ($LASTEXITCODE -ne 0) { throw 'Minimum PowerShell tests failed.' }
       - run: ./scripts/Build.ps1 -Installer
-      - run: ./scripts/New-WinGetManifest.ps1 -BuildMetadata ./dist/latest-build.json -OutputDirectory ./dist/winget
-      - name: Create draft with checksums
+      - name: Preserve and validate exact release installer
+        run: |
+          Copy-Item ./dist/latest-build.json ./dist/release-build.json
+          ./scripts/Test-Installer.ps1 -DisposableRunner -BuildMetadata ./dist/release-build.json
+      - run: ./scripts/New-WinGetManifest.ps1 -BuildMetadata ./dist/release-build.json -OutputDirectory ./dist/winget
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-installer-evidence
+          path: dist/installer-evidence/
+      - name: Publish verified tag or create manual draft
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_EVENT: ${{ github.event_name }}
+          RELEASE_REF: ${{ github.ref_name }}
         run: |
-          $build = Get-Content ./dist/latest-build.json -Raw | ConvertFrom-Json
+          $build = Get-Content ./dist/release-build.json -Raw | ConvertFrom-Json
           $version = $build.Version
           $notes = Join-Path 'docs/releases' "v$version.md"
           if (-not (Test-Path $notes)) { throw "Missing release notes: $notes" }
-          gh release create "v$version" --target '${{ github.sha }}' --draft --title "PS7-Completion $version" --notes-file $notes $build.Assets ./dist/winget/JackScott7.PS7-Completion.yaml
+          $mode = @('--draft')
+          if ($env:RELEASE_EVENT -eq 'push') {
+            if ($env:RELEASE_REF -ne "v$version") { throw 'Tag and module version mismatch.' }
+            $mode = @('--draft', '--verify-tag')
+          }
+          gh release create "v$version" --target '${{ github.sha }}' @mode --title "PS7-Completion $version" --notes-file $notes $build.Assets ./dist/winget/JackScott7.PS7-Completion.yaml
           if ($LASTEXITCODE -ne 0) { throw 'Draft release creation failed.' }
+          $download = Join-Path $env:RUNNER_TEMP 'release-download'
+          gh release download "v$version" --dir $download
+          if ($LASTEXITCODE -ne 0) { throw 'Release download verification failed.' }
+          foreach ($asset in @($build.Assets) + './dist/winget/JackScott7.PS7-Completion.yaml') {
+            $copy = Join-Path $download (Split-Path $asset -Leaf)
+            if ((Get-FileHash $asset).Hash -ne (Get-FileHash $copy).Hash) { throw 'Uploaded release asset hash mismatch.' }
+          }
+          if ($env:RELEASE_EVENT -eq 'push') {
+            gh release edit "v$version" --draft=false --prerelease=false --latest
+            if ($LASTEXITCODE -ne 0) { throw 'Release publication failed.' }
+          }

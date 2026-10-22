@@ -1,5 +1,12 @@
 # WinGet packaging
 
+The Inno Setup EXE is the only user-facing installation package. Direct downloads
+and WinGet use that same versioned EXE; no module ZIP is built or published.
+`scripts/Build.ps1 -Installer` produces the EXE and SHA256 checksums, and the
+manifest generator records that EXE's URL/hash with `InstallerType: inno` and
+machine scope. Validate unattended install, upgrade and uninstall through WinGet
+in the disposable environment before claiming support for a released package.
+
 `manifest.yaml.template` is an unpublished singleton manifest template, not a
 validated public package. Publisher/repository are JackScott7/PS7-Completion and
 the license is MIT. The repository remains private by owner request, so public

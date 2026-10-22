@@ -26,8 +26,6 @@ if ($Version) {
 $payloadManifest = Test-ModuleManifest (Join-Path $payload 'PS7-Completion.psd1')
 if ($payloadManifest.Version.ToString() -ne $releaseVersion) { throw 'Payload version mismatch.' }
 if ((Get-Content (Join-Path $payload 'LICENSE') -Raw) -notmatch '^MIT License') { throw 'A distribution license is required.' }
-$archive = Join-Path $stage "PS7-Completion-$releaseVersion.zip"
-Compress-Archive -Path (Join-Path $stage 'payload/PS7-Completion') -DestinationPath $archive -Force
 $installerPath = $null
 if ($Installer) {
     if (-not $CompilerPath) { $CompilerPath = (Get-Command ISCC.exe -ErrorAction Stop).Source }
@@ -36,11 +34,14 @@ if ($Installer) {
     $installerPath = Join-Path $stage "PS7-Completion-$releaseVersion-windows-x64.exe"
     if (-not (Test-Path -LiteralPath $installerPath)) { throw 'Installer artifact missing.' }
 }
-$assets = @($archive)
-if ($installerPath) { $assets += $installerPath }
-$hashes = @($assets | Get-FileHash -Algorithm SHA256)
-$checksumPath = Join-Path $stage 'SHA256SUMS.txt'
-$hashes | ForEach-Object { '{0}  {1}' -f $_.Hash.ToLowerInvariant(), (Split-Path $_.Path -Leaf) } | Set-Content $checksumPath
-$result = [pscustomobject]@{ Version = $releaseVersion; Archive = $archive; Installer = $installerPath; Checksums = $checksumPath; Payload = $payload; Assets = @($assets) + $checksumPath }
+$assets = @()
+$checksumPath = $null
+if ($installerPath) {
+    $checksumPath = Join-Path $stage 'SHA256SUMS.txt'
+    $hash = (Get-FileHash -LiteralPath $installerPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    '{0}  {1}' -f $hash, (Split-Path $installerPath -Leaf) | Set-Content $checksumPath
+    $assets = @($installerPath, $checksumPath)
+}
+$result = [pscustomobject]@{ Version = $releaseVersion; Installer = $installerPath; Checksums = $checksumPath; Payload = $payload; Assets = $assets }
 $result | ConvertTo-Json | Set-Content (Join-Path $dist 'latest-build.json')
 $result
