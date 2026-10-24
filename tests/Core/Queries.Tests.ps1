@@ -84,7 +84,7 @@ Describe 'Bounded query cache' {
             Mock Invoke-PS7QueryProcess { throw 'timeout' }
             { Get-PS7QueryData Processes } | Should -Throw
             $script:Cache.Count | Should -Be 0
-            Mock Invoke-PS7QueryProcess { Clear-PS7CompletionCache; @{ Data = @('old'); Dependencies = @() } }
+            Mock Invoke-PS7QueryProcess { Clear-PS7CompletionCache; @{ Data = @(@{ Id='1'; Name='old.exe' }); Dependencies = @() } }
             Get-PS7QueryData Processes | Out-Null
             $script:Cache.Count | Should -Be 0
         }
@@ -96,6 +96,7 @@ Describe 'Bounded query cache' {
             Get-PS7QueryData SshHosts a | Out-Null
             Get-PS7QueryData SshHosts a | Out-Null
             Should -Invoke Read-PS7SshConfig -Times 2 -Exactly
+            Mock Get-PS7DependencyStamp { 'old' }
             foreach ($i in 1..130) { Get-PS7QueryData SshHosts "path$i" | Out-Null }
             $script:Cache.Count | Should -Be 128
         }
