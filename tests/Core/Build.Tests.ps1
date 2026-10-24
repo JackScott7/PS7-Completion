@@ -35,14 +35,22 @@ Describe 'Release payload' {
         Get-Content $sourceManifest -Raw | Should -Be $before
     }
     It 'generates a manifest with exact installer hash and no placeholders' {
-        $installer = Join-Path $TestDrive 'fixture.exe'
+        $installer = Join-Path $TestDrive 'PS7-Completion-0.1.0-windows-x64.exe'
         Set-Content $installer 'fixture bytes only'
         $metadata = Join-Path $TestDrive 'build.json'
-        @{ Version='0.1.0'; Installer=$installer } | ConvertTo-Json | Set-Content $metadata
+        $checksums = Join-Path $TestDrive 'SHA256SUMS.txt'
+        ((Get-FileHash $installer).Hash + '  ' + (Split-Path $installer -Leaf)) | Set-Content $checksums
+        Set-Content (Join-Path $TestDrive 'PS7-Completion.psd1') "@{ ModuleVersion='0.1.0' }"
+        @{ Version='0.1.0'; Installer=$installer; Checksums=$checksums; Payload=$TestDrive } | ConvertTo-Json | Set-Content $metadata
         $path = & (Join-Path $projectRoot 'scripts/New-WinGetManifest.ps1') -BuildMetadata $metadata -OutputDirectory (Join-Path $TestDrive 'manifest')
         $yaml = Get-Content $path -Raw
         $yaml | Should -Match ((Get-FileHash $installer).Hash)
         $yaml | Should -Match 'PackageIdentifier: JackScott7.PS7-Completion'
         $yaml | Should -Not -Match '__[A-Z_]+__'
+        Set-Content $installer 'tampered bytes'
+        { & (Join-Path $projectRoot 'scripts/New-WinGetManifest.ps1') -BuildMetadata $metadata -OutputDirectory (Join-Path $TestDrive 'manifest') } | Should -Throw '*checksum mismatch*'
+        ((Get-FileHash $installer).Hash + '  ' + (Split-Path $installer -Leaf)) | Set-Content $checksums
+        Set-Content (Join-Path $TestDrive 'PS7-Completion.psd1') "@{ ModuleVersion='0.5.0' }"
+        { & (Join-Path $projectRoot 'scripts/New-WinGetManifest.ps1') -BuildMetadata $metadata -OutputDirectory (Join-Path $TestDrive 'manifest') } | Should -Throw '*version mismatch*'
     }
 }
