@@ -35,14 +35,31 @@ function Invoke-PS7QueryProcess {
     try {
         if (-not $process.Start()) { throw 'Cannot start completion query worker.' }
         $started = $true
-        $output = $process.StandardOutput.ReadToEndAsync()
-        $errors = $process.StandardError.ReadToEndAsync()
-        $remaining = [Math]::Max(0, $TimeoutMilliseconds - [int]$clock.ElapsedMilliseconds)
-        if (-not $process.WaitForExit($remaining)) { throw 'Completion query deadline exceeded.' }
+        # Fixed buffers bound both redirected streams while the worker runs.
+        # Reading one extra character lets us reject oversized output before it
+        # can accumulate in the parent process or block a full pipe.
+        $outputBuffer = [char[]]::new(2097153)
+        $errorBuffer = [char[]]::new(4097)
+        $output = $process.StandardOutput.ReadBlockAsync($outputBuffer, 0, $outputBuffer.Length)
+        $errors = $process.StandardError.ReadBlockAsync($errorBuffer, 0, $errorBuffer.Length)
+        while (-not $process.HasExited -or -not $output.IsCompleted -or -not $errors.IsCompleted) {
+            if ($output.IsCompleted -and $output.GetAwaiter().GetResult() -ge $outputBuffer.Length) { throw 'Query output exceeds its size limit.' }
+            if ($errors.IsCompleted -and $errors.GetAwaiter().GetResult() -ge $errorBuffer.Length) { throw 'Query error output exceeds its size limit.' }
+            $remaining = $TimeoutMilliseconds - [int]$clock.ElapsedMilliseconds
+            if ($remaining -le 0) { throw 'Completion query deadline exceeded.' }
+            if (-not $process.HasExited) {
+                $process.Refresh()
+                if ($process.PrivateMemorySize64 -gt 268435456) { throw 'Completion query worker memory limit exceeded.' }
+            }
+            if ($process.HasExited) { [Threading.Thread]::Sleep([Math]::Min(10, $remaining)) }
+            else { [void]$process.WaitForExit([Math]::Min(10, $remaining)) }
+        }
         if ($process.ExitCode -ne 0) { throw 'Completion query worker failed.' }
-        $json = $output.GetAwaiter().GetResult()
-        if ($errors.GetAwaiter().GetResult()) { throw 'Completion query worker wrote an error.' }
-        if ($json.Length -gt 2097152) { throw 'Query output exceeds its size limit.' }
+        $outputLength = $output.GetAwaiter().GetResult()
+        $errorLength = $errors.GetAwaiter().GetResult()
+        if ($outputLength -ge $outputBuffer.Length) { throw 'Query output exceeds its size limit.' }
+        if ($errorLength -gt 0) { throw 'Completion query worker wrote an error.' }
+        $json = [string]::new($outputBuffer, 0, $outputLength)
         $parseClock = [Diagnostics.Stopwatch]::StartNew()
         $response = $json | ConvertFrom-Json -AsHashtable -ErrorAction Stop
         if ($Request.ContainsKey('Measure') -and $Request.Measure -and $response.ContainsKey('Metrics')) {

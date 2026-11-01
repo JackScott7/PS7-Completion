@@ -111,4 +111,29 @@ Describe 'Bounded query cache' {
         }
         if (Test-Path $pidFile) { Get-Process -Id ([int](Get-Content $pidFile)) -ErrorAction Ignore | Should -BeNullOrEmpty }
     }
+    It 'rejects oversized <Stream> output and reaps the worker' -ForEach @(
+        @{ Stream='stdout' }, @{ Stream='stderr' }
+    ) {
+        $worker = Join-Path $TestDrive "large-$Stream.ps1"
+        $pidFile = Join-Path $TestDrive "large-$Stream.pid"
+        $writer = if ($Stream -eq 'stdout') { '[Console]::Out' } else { '[Console]::Error' }
+        Set-Content $worker "param([string]`$RequestBase64)`n[IO.File]::WriteAllText('$pidFile', [string]`$PID)`n$writer.Write(('x' * 3000000))`nStart-Sleep -Seconds 20"
+        InModuleScope PS7-Completion -Parameters @{ Worker=$worker } {
+            param($Worker)
+            { Invoke-PS7QueryProcess -Request @{} -WorkerPath $Worker -TimeoutMilliseconds 5000 } | Should -Throw '*size limit*'
+        }
+        Test-Path $pidFile | Should -BeTrue
+        Get-Process -Id ([int](Get-Content $pidFile)) -ErrorAction Ignore | Should -BeNullOrEmpty
+    }
+    It 'terminates and reaps a worker that exceeds the sampled memory limit' {
+        $worker = Join-Path $TestDrive 'large-memory.ps1'
+        $pidFile = Join-Path $TestDrive 'large-memory.pid'
+        Set-Content $worker "param([string]`$RequestBase64)`n[IO.File]::WriteAllText('$pidFile', [string]`$PID)`n`$data = [byte[]]::new(350MB)`nfor (`$i = 0; `$i -lt `$data.Length; `$i += 4096) { `$data[`$i] = 1 }`nStart-Sleep -Seconds 20"
+        InModuleScope PS7-Completion -Parameters @{ Worker=$worker } {
+            param($Worker)
+            { Invoke-PS7QueryProcess -Request @{} -WorkerPath $Worker -TimeoutMilliseconds 5000 } | Should -Throw '*memory limit*'
+        }
+        Test-Path $pidFile | Should -BeTrue
+        Get-Process -Id ([int](Get-Content $pidFile)) -ErrorAction Ignore | Should -BeNullOrEmpty
+    }
 }
