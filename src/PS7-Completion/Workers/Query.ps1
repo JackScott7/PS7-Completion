@@ -23,7 +23,10 @@ try {
         'Services' {
             $services = [System.ServiceProcess.ServiceController]::GetServices()
             try {
-                for ($index = 0; $index -lt [Math]::Min(4096, $services.Length); $index++) { $services[$index].ServiceName }
+                for ($index = 0; $index -lt [Math]::Min(4096, $services.Length); $index++) {
+                    # A service can disappear or become inaccessible after enumeration.
+                    try { $services[$index].ServiceName } catch { continue }
+                }
             }
             finally { foreach ($service in $services) { $service.Dispose() } }
         }
