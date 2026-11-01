@@ -51,6 +51,11 @@ Describe 'Scale and refresh contracts' {
             $fixtureId = [string]$fixture.Id
             InModuleScope PS7-Completion -Parameters @{ FixtureId=$fixtureId; Fixture=$fixture } {
                 param($FixtureId, $Fixture)
+                # Cache refresh is under test here. Hosted runner startup can
+                # exceed the production completion budget; timeout behavior is
+                # covered separately by the worker deadline tests.
+                $script:ScaleOriginalQuery = ${function:Invoke-PS7QueryProcess}
+                Mock Invoke-PS7QueryProcess { & $script:ScaleOriginalQuery -Request $Request -TimeoutMilliseconds 3000 }
                 @(Get-PS7QueryData Processes | Where-Object Id -EQ $FixtureId).Count | Should -Be 1
                 $Fixture.Kill()
                 $Fixture.WaitForExit()
@@ -66,7 +71,7 @@ Describe 'Scale and refresh contracts' {
     }
     It 'reports peak memory for a measured live query worker' {
         InModuleScope PS7-Completion {
-            $result = Invoke-PS7QueryProcess -Request @{ Kind='Processes'; Measure=$true }
+            $result = Invoke-PS7QueryProcess -Request @{ Kind='Processes'; Measure=$true } -TimeoutMilliseconds 3000
             $result.Metrics.WorkerPeakWorkingSetBytes | Should -BeGreaterThan 0
         }
     }
