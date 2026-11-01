@@ -46,6 +46,15 @@ include tree. Snapshot cases exercise normalization, not OS collectors. Heap
 deltas are observations, not peak-memory guarantees; they may be negative after
 garbage collection. Fixture files are retained beside the report for inspection.
 
+Measured live worker queries report their peak working set along with elapsed time
+and item count. Peak memory is an observation for the sampled machine and data;
+the operating system controls the worker's process allocation. The parent limits
+worker standard output to 2,097,152 characters and standard error to 4,096
+characters, and terminates a worker that exceeds either limit or the query deadline.
+It samples the worker's private memory during the query and terminates it above
+256 MiB. This is a sampled guard, not an operating-system-enforced hard limit;
+short-lived spikes may exceed the threshold between checks.
+
 To debug a provider, start `pwsh -NoProfile`, import the source manifest, and
 reproduce with a synthetic command such as `winget ins`. Inspect
 `Get-PS7CompletionProvider` for its status and clear data with

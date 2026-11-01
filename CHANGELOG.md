@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.7 - Bounded queries and validation
 
 ### Added
 
@@ -9,6 +9,8 @@
 - Add reproducible synthetic data-scale measurements and source/staged-payload
   compatibility reports.
 - Support explicit installer upgrade pairs and repair checks on disposable runners.
+- Measure query worker peak memory and stop workers that exceed the sampled
+  256 MiB private-memory threshold.
 
 ### Changed
 
@@ -20,6 +22,9 @@
 ### Fixed
 
 - Avoid caching SSH snapshots whose dependencies changed during collection.
+- Stop query workers that exceed the output limit before oversized output can
+  accumulate in the interactive PowerShell process.
+- Continue collecting service names when an individual service becomes unavailable.
 
 ## 0.1.6 - Option values and detailed provider contexts
 
