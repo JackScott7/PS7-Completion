@@ -35,6 +35,8 @@ $cases = [ordered]@{
     node='node --'; npm='npm ins'; sqlite3='sqlite3 -'; ffmpeg='ffmpeg -'; rustc='rustc --'
     rustup='rustup '; nano='nano --'; ping='ping -'; uvx='uvx --'; uvicorn='uvicorn --'
     twine='twine '; ruff='ruff '; ipconfig='ipconfig /'; tracert='tracert -'; netstat='netstat -'
+    dotnet='dotnet bu'; icacls='icacls /'; net='net us'; npx='npx --'; pnpm='pnpm ins'; yarn='yarn ins'
+    wsl='wsl --'; pytest='pytest --'; pipx='pipx ins'; sfc='sfc /'; dism='dism /'; reg='reg qu'
     curl='curl.exe --'; cargo='cargo '; docker='docker '; nslookup='nslookup -'
 }
 $startup = @(); $imports = @(); $first = @{}

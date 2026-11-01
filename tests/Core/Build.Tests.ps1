@@ -7,7 +7,7 @@ Describe 'Release payload' {
         try {
             Get-Module PS7-Completion | Remove-Module -Force
             Import-Module (Join-Path $build.Payload 'PS7-Completion.psd1') -Force
-            @(Get-PS7CompletionProvider).Count | Should -Be 34
+            @(Get-PS7CompletionProvider).Count | Should -Be 46
             @(Get-PS7CompletionProvider | Where-Object Loaded).Count | Should -Be 0
             $line = 'python -m pip ins'
             [Management.Automation.CommandCompletion]::CompleteInput($line,$line.Length,$null).CompletionMatches.CompletionText | Should -Contain install

@@ -14,8 +14,8 @@ Describe 'Module contract' {
         $commands | Should -Contain 'Register-PS7CompletionProvider'
         $commands | Should -Contain 'New-PS7CompletionResult'
     }
-    It 'registers all 34 providers without eagerly loading them' {
-        @(Get-PS7CompletionProvider).Count | Should -Be 34
+    It 'registers all 46 providers without eagerly loading them' {
+        @(Get-PS7CompletionProvider).Count | Should -Be 46
         @(Get-PS7CompletionProvider | Where-Object Loaded).Count | Should -Be 0
         (Get-PS7CompletionProvider | Where-Object Name -EQ services).Commands | Should -Be @('sc.exe')
     }
@@ -59,5 +59,27 @@ Describe 'Configuration' {
     }
     It 'rejects an unknown provider ID' {
         { Import-Module $manifest -Force -ArgumentList @{ Exclude = @('missing') } -ErrorAction Stop } | Should -Throw '*Unknown provider*'
+    }
+}
+
+Describe 'Tool-provided PowerShell completions' {
+    It 'retains helpers and lets a tool script replace a built-in callback' {
+        $path = Join-Path $TestDrive 'native-completion.ps1'
+        @"
+function Get-ToolFixtureCandidate { 'external-sentinel' }
+Register-ArgumentCompleter -CommandName git -ScriptBlock {
+    [System.Management.Automation.CompletionResult]::new((Get-ToolFixtureCandidate), 'external', 'ParameterValue', 'fixture')
+}
+"@ | Set-Content -LiteralPath $path
+        try {
+            Import-Module $manifest -Force -ArgumentList @{ NativeCompletionScripts = @($path) }
+            $line = 'git ext'
+            [Management.Automation.CommandCompletion]::CompleteInput($line, $line.Length, $null).CompletionMatches.CompletionText | Should -Contain 'external-sentinel'
+        }
+        finally { Import-Module $manifest -Force }
+    }
+    It 'rejects a missing script' {
+        { Import-Module $manifest -Force -ArgumentList @{ NativeCompletionScripts = @((Join-Path $TestDrive 'missing.ps1')) } -ErrorAction Stop } | Should -Throw '*Invalid native completion script*'
+        Import-Module $manifest -Force
     }
 }

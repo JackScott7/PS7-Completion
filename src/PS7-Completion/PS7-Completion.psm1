@@ -17,13 +17,25 @@ foreach ($folder in @('Private', 'Public')) {
 }
 # END RUNTIME LOAD
 if ($null -eq $Configuration) { throw 'Configuration cannot be null.' }
-foreach ($key in $Configuration.Keys) { if ($key -ne 'Exclude') { throw "Unknown configuration key: $key" } }
+foreach ($key in $Configuration.Keys) { if ($key -notin @('Exclude', 'NativeCompletionScripts')) { throw "Unknown configuration key: $key" } }
 $script:Excluded = @()
 if ($Configuration.ContainsKey('Exclude')) {
     if ($Configuration.Exclude -isnot [array] -and $Configuration.Exclude -isnot [string]) { throw 'Exclude must contain provider IDs.' }
     foreach ($name in $Configuration.Exclude) {
         if ($name -isnot [string] -or [string]::IsNullOrWhiteSpace($name)) { throw 'Exclude must contain nonempty provider IDs.' }
         $script:Excluded += $name
+    }
+}
+$nativeScriptPaths = @()
+if ($Configuration.ContainsKey('NativeCompletionScripts')) {
+    $paths = $Configuration.NativeCompletionScripts
+    if ($paths -isnot [array] -and $paths -isnot [string]) { throw 'NativeCompletionScripts must contain script paths.' }
+    foreach ($path in $paths) {
+        if ($path -isnot [string] -or [string]::IsNullOrWhiteSpace($path)) { throw 'NativeCompletionScripts must contain nonempty script paths.' }
+        try { $resolved = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($path) }
+        catch { throw "Invalid native completion script: $path" }
+        if (-not [IO.File]::Exists($resolved) -or [IO.Path]::GetExtension($resolved) -ine '.ps1') { throw "Invalid native completion script: $path" }
+        $nativeScriptPaths += $resolved
     }
 }
 $registryTokens = $null
@@ -69,5 +81,11 @@ Invoke-PS7Provider -Name '$name' -WordToComplete `$wordToComplete -CommandAst `$
         $script:Registry[$name] = @{ Commands = $entry.Commands; File = $entry.File; Enabled = $true; Status = 'Registered'; Source = 'BuiltIn' }
         foreach ($command in $entry.Commands) { $script:CommandOwners[$command] = $name }
     }
+}
+# Separate modules retain helper functions used by tool-provided callbacks.
+# Their registrations take precedence over built-in providers.
+$script:NativeCompletionModules = @()
+foreach ($path in $nativeScriptPaths) {
+    $script:NativeCompletionModules += New-Module -ScriptBlock { param($ScriptPath) Set-StrictMode -Off; . $ScriptPath } -ArgumentList $path
 }
 Export-ModuleMember -Function Get-PS7CompletionProvider, Clear-PS7CompletionCache, Register-PS7CompletionProvider, New-PS7CompletionResult

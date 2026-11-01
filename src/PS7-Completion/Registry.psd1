@@ -33,4 +33,16 @@
     cargo = @{ Commands = @('cargo', 'cargo.exe'); File = 'Completions/cargo.ps1' }
     docker = @{ Commands = @('docker', 'docker.exe'); File = 'Completions/docker.ps1' }
     nslookup = @{ Commands = @('nslookup', 'nslookup.exe'); File = 'Completions/nslookup.ps1' }
+    dotnet = @{ Commands = @('dotnet', 'dotnet.exe'); File = 'Completions/dotnet.ps1' }
+    npx = @{ Commands = @('npx', 'npx.cmd', 'npx.ps1'); File = 'Completions/npx.ps1' }
+    pnpm = @{ Commands = @('pnpm', 'pnpm.cmd', 'pnpm.ps1'); File = 'Completions/pnpm.ps1' }
+    yarn = @{ Commands = @('yarn', 'yarn.cmd', 'yarn.ps1'); File = 'Completions/yarn.ps1' }
+    wsl = @{ Commands = @('wsl', 'wsl.exe'); File = 'Completions/wsl.ps1' }
+    pytest = @{ Commands = @('pytest', 'pytest.exe'); File = 'Completions/pytest.ps1' }
+    pipx = @{ Commands = @('pipx', 'pipx.exe'); File = 'Completions/pipx.ps1' }
+    icacls = @{ Commands = @('icacls', 'icacls.exe'); File = 'Completions/icacls.ps1' }
+    net = @{ Commands = @('net', 'net.exe'); File = 'Completions/net.ps1' }
+    sfc = @{ Commands = @('sfc', 'sfc.exe'); File = 'Completions/sfc.ps1' }
+    dism = @{ Commands = @('dism', 'dism.exe'); File = 'Completions/dism.ps1' }
+    reg = @{ Commands = @('reg', 'reg.exe'); File = 'Completions/reg.ps1' }
 }

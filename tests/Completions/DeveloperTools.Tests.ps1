@@ -6,6 +6,20 @@ BeforeAll {
 }
 Describe 'Developer tool provider integration' {
     It 'completes <Line>' -ForEach @(
+        @{ Line='dotnet bu'; Expected='build' }
+        @{ Line='dotnet build --no-r'; Expected='--no-restore' }
+        @{ Line='icacls /ver'; Expected='/verify' }
+        @{ Line='net us'; Expected='use' }
+        @{ Line='net.exe user /a'; Expected='/add' }
+        @{ Line='npx --ye'; Expected='--yes' }
+        @{ Line='pnpm.cmd ins'; Expected='install' }
+        @{ Line='yarn.ps1 ad'; Expected='add' }
+        @{ Line='wsl.exe --sh'; Expected='--shutdown' }
+        @{ Line='pytest --collect'; Expected='--collect-only' }
+        @{ Line='pipx ins'; Expected='install' }
+        @{ Line='sfc /scan'; Expected='/scannow' }
+        @{ Line='dism /Scan'; Expected='/ScanHealth' }
+        @{ Line='reg.exe qu'; Expected='query' }
         @{ Line='git sta'; Expected='status' }
         @{ Line='git -C repo status --s'; Expected='--short' }
         @{ Line='gh pr list --st'; Expected='--state' }
@@ -72,6 +86,14 @@ Describe 'Developer tool provider integration' {
     }
     InModuleScope PS7-Completion {
         It 'suppresses provider suggestions for <Line>' -ForEach @(
+            @{ Name='npx'; Line='npx --package ' }
+            @{ Name='npx'; Line='npx tool ' }
+            @{ Name='pnpm'; Line='pnpm exec tool ' }
+            @{ Name='yarn'; Line='yarn run build ' }
+            @{ Name='pipx'; Line='pipx run tool ' }
+            @{ Name='pytest'; Line='pytest -k ' }
+            @{ Name='pipx'; Line='pipx install --python ' }
+            @{ Name='wsl'; Line='wsl --distribution ' }
             @{ Name='git'; Line='git --unknown ' }
             @{ Name='git'; Line='git -- ' }
             @{ Name='git'; Line='git -C ' }
