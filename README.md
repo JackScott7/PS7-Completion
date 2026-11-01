@@ -28,7 +28,7 @@ including Python scripts run directly or through `python`. See the
 [Wiki](https://github.com/JackScott7/PS7-Completion/wiki) for supported syntax,
 configuration, custom completions, and technical details.
 
-Version 0.1.7 improves bounded query handling and service resilience. See the
+Version 0.1.8 adds more tool completions and support for tool-provided scripts. See the
 [changelog](CHANGELOG.md) for changes and supported release details.
 
 PS7-Completion is licensed under [MIT](LICENSE).

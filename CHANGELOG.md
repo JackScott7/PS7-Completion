@@ -1,12 +1,21 @@
 # Changelog
 
-## Unreleased
+## 0.1.8 - More tool completions
 
 ### Added
 
 - Add offline completions for dotnet, icacls, net, npx, pnpm, yarn,
   wsl, pytest, pipx, sfc, DISM, and reg.
 - Load trusted tool-provided PowerShell completion scripts during module import.
+
+### Changed
+
+- Let configured tool-provided completion scripts register after built-in providers.
+
+### Fixed
+
+- Stop suggesting wrapper options after npx, pnpm, yarn, or pipx passes control
+  to another command.
 
 ## 0.1.7 - Bounded queries and validation
 
