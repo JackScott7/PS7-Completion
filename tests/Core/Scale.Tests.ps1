@@ -45,6 +45,36 @@ Describe 'Scale and refresh contracts' {
             $script:Cache.Count | Should -Be 0
         }
     }
+    It 'refreshes a real process after it exits and the cached snapshot expires' {
+        $fixture = Start-Process -FilePath (Join-Path $PSHOME 'pwsh.exe') -ArgumentList '-NoProfile','-NonInteractive','-Command','Start-Sleep -Seconds 120' -WindowStyle Hidden -PassThru
+        try {
+            $fixtureId = [string]$fixture.Id
+            InModuleScope PS7-Completion -Parameters @{ FixtureId=$fixtureId; Fixture=$fixture } {
+                param($FixtureId, $Fixture)
+                # Cache refresh is under test here. Hosted runner startup can
+                # exceed the production completion budget; timeout behavior is
+                # covered separately by the worker deadline tests.
+                $script:ScaleOriginalQuery = ${function:Invoke-PS7QueryProcess}
+                Mock Invoke-PS7QueryProcess { & $script:ScaleOriginalQuery -Request $Request -TimeoutMilliseconds 3000 }
+                @(Get-PS7QueryData Processes | Where-Object Id -EQ $FixtureId).Count | Should -Be 1
+                $Fixture.Kill()
+                $Fixture.WaitForExit()
+                @(Get-PS7QueryData Processes | Where-Object Id -EQ $FixtureId).Count | Should -Be 1
+                $script:Cache['Processes|'].Created -= 31 * [Diagnostics.Stopwatch]::Frequency
+                @(Get-PS7QueryData Processes | Where-Object Id -EQ $FixtureId).Count | Should -Be 0
+            }
+        }
+        finally {
+            if (-not $fixture.HasExited) { $fixture.Kill(); $fixture.WaitForExit() }
+            $fixture.Dispose()
+        }
+    }
+    It 'reports peak memory for a measured live query worker' {
+        InModuleScope PS7-Completion {
+            $result = Invoke-PS7QueryProcess -Request @{ Kind='Processes'; Measure=$true } -TimeoutMilliseconds 3000
+            $result.Metrics.WorkerPeakWorkingSetBytes | Should -BeGreaterThan 0
+        }
+    }
     It 'bounds retained string characters as well as item count' {
         InModuleScope PS7-Completion {
             Mock Invoke-PS7QueryProcess { @{ Data=@(1..100 | ForEach-Object { ([string]$_).PadRight(32768, 'x') }); Dependencies=@() } }
