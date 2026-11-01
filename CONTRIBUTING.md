@@ -30,3 +30,34 @@ machine, engine and OS identical for comparisons. CI retains informational timin
 artifacts; use `scripts/Compare-Performance.ps1 -EnforceTiming` on a controlled
 machine to enforce regressions. Never accept fewer results or failed queries as
 an improvement. Do not compare sandbox-denied lookups with unrestricted lookups.
+
+Run `./scripts/Test.ps1 -Coverage` for per-provider command coverage in
+`dist/coverage/providers.json` and the XML coverage report. Every registry entry
+must have measured coverage. A percentage measures executed statements; review
+positive and unsupported-context fixtures separately when adding behavior.
+`./scripts/Test-Compatibility.ps1` runs fresh-shell checks and accepts multiple
+PowerShell executable paths with `-Engine`. CI checks source and staged payloads
+on minimum and current PowerShell. Offline capability snapshots do not certify
+unrecorded native tool versions.
+
+Run `./scripts/Measure-DataScale.ps1` to record cache/result counts and managed
+heap deltas for synthetic process, service and task snapshots and a local SSH
+include tree. Snapshot cases exercise normalization, not OS collectors. Heap
+deltas are observations, not peak-memory guarantees; they may be negative after
+garbage collection. Fixture files are retained beside the report for inspection.
+
+To debug a provider, start `pwsh -NoProfile`, import the source manifest, and
+reproduce with a synthetic command such as `winget ins`. Inspect
+`Get-PS7CompletionProvider` for its status and clear data with
+`Clear-PS7CompletionCache` before retrying. Use synthetic names and local fixture
+files. Enable `$DebugPreference = 'Continue'` only for that synthetic reproduction:
+debug messages can include exception details. Reset it to `SilentlyContinue`
+afterwards. Do not attach real host names, process lists or configuration contents
+to reports. Coverage and compatibility summaries contain no query data.
+
+The manual Historical upgrade validation workflow builds the v0.1.1 baseline
+from its tag and the current source as a 0.5.0 candidate on a disposable runner.
+It checks installation, repair, upgrade, retained versions and uninstall with
+user-file preservation. This is a candidate validation run, not a release.
+Pass lifecycle inputs to `Test-Installer.ps1` with `-BuildMetadata` and
+`-UpgradeBuildMetadata` on an authorized disposable runner.

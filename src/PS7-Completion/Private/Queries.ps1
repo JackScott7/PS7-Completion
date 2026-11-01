@@ -91,8 +91,28 @@ function Get-PS7QueryData {
         $response = Invoke-PS7QueryProcess -Request @{ Kind = $Kind; Path = $Path } -TimeoutMilliseconds $remaining
     }
     if (-not $response.ContainsKey('Data') -or -not $response.ContainsKey('Dependencies')) { throw 'Invalid query response.' }
-    $data = @($response.Data | Select-Object -First 4096)
-    if ($generation -eq $script:CacheGeneration) {
+    # Bound retained values independently of the source and discard exact
+    # duplicates before they consume the cache/result budget. Preserve case.
+    $seen = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+    $values = [Collections.Generic.List[object]]::new()
+    $characters = 0
+    foreach ($value in $response.Data) {
+        if ($values.Count -ge 4096) { break }
+        if ($null -eq $value) { continue }
+        $identity = if ($Kind -eq 'Processes') { "$($value.Id)|$($value.Name)" } else { [string]$value }
+        if (-not $identity -or $identity.Length -gt 32768) { continue }
+        if ($characters + $identity.Length -gt 1048576) { break }
+        if ($seen.Add($identity)) { $values.Add($value); $characters += $identity.Length }
+    }
+    $data = $values.ToArray()
+    # A file may change after the parser captured its stamp. Do not cache that
+    # inconsistent snapshot; the next request must collect fresh data.
+    $stable = $true
+    foreach ($dependency in $response.Dependencies) {
+        if ($null -ne $script:QueryClock -and $script:QueryClock.ElapsedMilliseconds -ge 500) { throw 'Completion query deadline exceeded.' }
+        if ((Get-PS7DependencyStamp $dependency.Path) -ne $dependency.Stamp) { $stable = $false; break }
+    }
+    if ($stable -and $generation -eq $script:CacheGeneration) {
         if ($script:Cache.Count -ge 128) {
             $oldest = $script:Cache.Keys | Sort-Object { $script:Cache[$_].Created } | Select-Object -First 1
             $script:Cache.Remove($oldest)

@@ -1,0 +1,47 @@
+name: Historical upgrade validation
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'src/**'
+      - 'packaging/**'
+      - 'scripts/**'
+      - '.github/workflows/upgrade-validation.yml'
+permissions:
+  contents: read
+jobs:
+  upgrade:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: v0.1.1
+          path: dist/baseline
+      - name: Prepare compiler
+        run: |
+          $compiler = 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
+          if (-not (Test-Path $compiler)) {
+            choco install innosetup --version=6.4.3 --yes --no-progress
+            if ($LASTEXITCODE -ne 0) { throw 'Compiler installation failed.' }
+          }
+          Split-Path $compiler | Out-File $env:GITHUB_PATH -Append
+      - name: Build historical baseline and candidate
+        run: |
+          ./dist/baseline/scripts/Build.ps1 -Installer
+          $candidate = ./scripts/Build.ps1 -Installer -Version 0.5.0
+          $candidate | ConvertTo-Json | Set-Content ./dist/upgrade-candidate.json
+          ./scripts/Test-Compatibility.ps1 -Manifest (Join-Path $candidate.Payload 'PS7-Completion.psd1')
+      - name: Validate upgrade and recovery
+        run: ./scripts/Test-Installer.ps1 -DisposableRunner -BuildMetadata ./dist/baseline/dist/latest-build.json -UpgradeBuildMetadata ./dist/upgrade-candidate.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: historical-upgrade-evidence
+          path: |
+            dist/installer-evidence/
+            dist/compatibility/
+            dist/upgrade-candidate.json
