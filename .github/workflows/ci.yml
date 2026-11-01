@@ -37,10 +37,26 @@ jobs:
           if ('${{ matrix.powershell }}' -eq 'minimum') {
             & $engine -NoProfile -File ./scripts/Test.ps1 -SkipAnalyzer
           } else {
-            & $engine -NoProfile -File ./scripts/Test.ps1
+            & $engine -NoProfile -File ./scripts/Test.ps1 -Coverage
           }
           if ($LASTEXITCODE -ne 0) { throw 'Test suite failed.' }
       - run: ./scripts/Build.ps1
+      - uses: actions/upload-artifact@v4
+        if: always() && matrix.powershell == 'current'
+        with:
+          name: provider-coverage
+          path: dist/coverage/
+      - name: Fresh-shell source and staged compatibility
+        run: |
+          $engine = if ('${{ matrix.powershell }}' -eq 'minimum') { Join-Path $env:RUNNER_TEMP 'pwsh74/pwsh.exe' } else { (Get-Command pwsh).Source }
+          ./scripts/Test-Compatibility.ps1 -Engine $engine -OutputPath ./dist/compatibility/source.json
+          $build = Get-Content ./dist/latest-build.json -Raw | ConvertFrom-Json
+          ./scripts/Test-Compatibility.ps1 -Engine $engine -Manifest (Join-Path $build.Payload 'PS7-Completion.psd1') -OutputPath ./dist/compatibility/staged.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: compatibility-${{ matrix.powershell }}
+          path: dist/compatibility/*.json
       - name: Record performance (informational timing)
         if: matrix.powershell == 'current'
         run: |

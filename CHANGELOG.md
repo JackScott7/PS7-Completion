@@ -1,5 +1,26 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Report statement coverage for every bundled provider and check every registered
+  executable name in fresh PowerShell sessions.
+- Add reproducible synthetic data-scale measurements and source/staged-payload
+  compatibility reports.
+- Support explicit installer upgrade pairs and repair checks on disposable runners.
+
+### Changed
+
+- Bound cached query text to 1,048,576 characters per entry and remove exact
+  duplicates before they consume the 4,096-value budget.
+- Require matching installer filenames, checksums and payload versions when
+  generating WinGet metadata.
+
+### Fixed
+
+- Avoid caching SSH snapshots whose dependencies changed during collection.
+
 ## 0.1.6 - Option values and detailed provider contexts
 
 ### Added
