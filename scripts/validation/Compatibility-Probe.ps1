@@ -19,7 +19,7 @@ else {
     $registry = Import-PowerShellDataFile (Join-Path (Split-Path $Manifest) 'Registry.psd1')
     foreach ($name in $registry.Keys) {
         foreach ($command in $registry[$name].Commands) {
-            $prefix = if ($name -eq 'services') { 'q' } elseif ($name -in 'schtasks','taskkill','ipconfig') { '/' } else { '-' }
+            $prefix = if ($name -eq 'services') { 'q' } elseif ($name -in 'schtasks','taskkill','ipconfig','icacls','net','sfc','dism','reg') { '/' } else { '-' }
             $completionMatches = Get-CompletionMatch "$command $prefix"
             if (-not $completionMatches.Count -or @($completionMatches | Where-Object { $_ -isnot [Management.Automation.CompletionResult] }).Count) {
                 throw "Invalid static results: $name / $command"

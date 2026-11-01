@@ -6,7 +6,7 @@ BeforeAll { Import-Module (Join-Path $PSScriptRoot '../../src/PS7-Completion/PS7
 Describe 'Bundled provider inventory contract' {
     It 'returns bounded typed static results for every <Name> executable' -ForEach $cases {
         foreach ($command in $Commands) {
-            $prefix = if ($Name -eq 'services') { 'q' } elseif ($Name -in 'schtasks','taskkill','ipconfig') { '/' } else { '-' }
+            $prefix = if ($Name -eq 'services') { 'q' } elseif ($Name -in 'schtasks','taskkill','ipconfig','icacls','net','sfc','dism','reg') { '/' } else { '-' }
             $line = "$command $prefix"
             $results = @([Management.Automation.CommandCompletion]::CompleteInput($line,$line.Length,$null).CompletionMatches)
             $results.Count | Should -BeGreaterThan 0
