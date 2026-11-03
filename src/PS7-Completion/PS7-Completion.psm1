@@ -17,7 +17,8 @@ foreach ($folder in @('Private', 'Public')) {
 }
 # END RUNTIME LOAD
 if ($null -eq $Configuration) { throw 'Configuration cannot be null.' }
-foreach ($key in $Configuration.Keys) { if ($key -notin @('Exclude', 'NativeCompletionScripts')) { throw "Unknown configuration key: $key" } }
+foreach ($key in $Configuration.Keys) { if ($key -notin @('Exclude', 'NativeCompletionScripts', 'ExtensionlessCommands')) { throw "Unknown configuration key: $key" } }
+if ($Configuration.ContainsKey('ExtensionlessCommands') -and $Configuration.ExtensionlessCommands -isnot [bool]) { throw 'ExtensionlessCommands must be a Boolean.' }
 $script:Excluded = @()
 if ($Configuration.ContainsKey('Exclude')) {
     if ($Configuration.Exclude -isnot [array] -and $Configuration.Exclude -isnot [string]) { throw 'Exclude must contain provider IDs.' }
@@ -88,4 +89,5 @@ $script:NativeCompletionModules = @()
 foreach ($path in $nativeScriptPaths) {
     $script:NativeCompletionModules += New-Module -ScriptBlock { param($ScriptPath) Set-StrictMode -Off; . $ScriptPath } -ArgumentList $path
 }
+if ($Configuration.ContainsKey('ExtensionlessCommands') -and $Configuration.ExtensionlessCommands) { Enable-PS7ExtensionlessCommand }
 Export-ModuleMember -Function Get-PS7CompletionProvider, Clear-PS7CompletionCache, Register-PS7CompletionProvider, New-PS7CompletionResult

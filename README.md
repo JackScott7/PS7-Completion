@@ -28,10 +28,27 @@ including Python scripts run directly or through `python`. See the
 [Wiki](https://github.com/JackScott7/PS7-Completion/wiki) for supported syntax,
 configuration, custom completions, and technical details.
 
-Version 0.1.8 adds more tool completions and support for tool-provided scripts. See the
+Version 0.1.9 adds optional extensionless executable-name completion. See the
 [changelog](CHANGELOG.md) for changes and supported release details.
 
 PS7-Completion is licensed under [MIT](LICENSE).
+
+## Executable names without `.exe`
+
+To complete executable names without their `.exe` extension, enable this
+separate feature when importing the module:
+
+```powershell
+Import-Module PS7-Completion -ArgumentList @{ ExtensionlessCommands = $true }
+```
+
+For example, `pyt` followed by Tab can complete to `python`. When several
+executables share that name, the completion uses the one PowerShell resolves
+first on `PATH`. Explicit paths and typed `.exe` extensions are left intact.
+If an alias or function takes precedence over the executable, its extension is
+retained so the completion does not select a different command. The feature
+wraps the session's `TabExpansion2` function and restores it when the module is
+removed. Add the import command to your profile to enable it in new sessions.
 
 ## Tool-provided completions
 

@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.1.9 - Extensionless executable names
+
+### Added
+
+- Optionally complete executable command names without the `.exe` extension.
+
+### Changed
+
+- Preserve the existing completion function and restore it when the module is removed.
+
+### Fixed
+
+- Avoid duplicate executable-name suggestions for matching programs on PATH.
+
 ## 0.1.8 - More tool completions
 
 ### Added
