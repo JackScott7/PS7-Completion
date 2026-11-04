@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.5.0 - Windows package preparation
+
+### Added
+
+- Include WinGet community manifest files with release assets for the Windows installer.
+
+### Changed
+
+- Document installer prerequisites, unsigned publisher warnings, and upgrade behavior.
+
+### Fixed
+
+- Provide the installer's product code in WinGet metadata to support installed-package correlation.
+
 ## 0.1.9 - Extensionless executable names
 
 ### Added

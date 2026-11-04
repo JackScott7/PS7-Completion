@@ -36,8 +36,7 @@ including Python scripts run directly or through `python`. See the
 [Wiki](https://github.com/JackScott7/PS7-Completion/wiki) for supported syntax,
 configuration, custom completions, and technical details.
 
-Version 0.1.9 adds optional extensionless executable-name completion. See the
-[changelog](CHANGELOG.md) for changes and supported release details.
+See the [changelog](CHANGELOG.md) for changes and supported release details.
 
 PS7-Completion is licensed under [MIT](LICENSE).
 
