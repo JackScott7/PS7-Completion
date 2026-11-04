@@ -18,7 +18,12 @@ function Convert-PS7CommandName {
             $resolved = Get-Command -Name $name -ErrorAction SilentlyContinue | Select-Object -First 1
             if ($resolved -and $resolved.CommandType -eq 'Application' -and $resolved.Source -ieq $item.ToolTip) {
                 $null = $seen.Add($name)
-                $results.Add([Management.Automation.CompletionResult]::new($name, $name, $item.ResultType, $item.ToolTip))
+                $text = $name
+                if ($name -notmatch '^[\p{L}\p{N}_./\\:@=+%-]+$') {
+                    $text = "'" + $name.Replace("'", "''") + "'"
+                    if ($command.InvocationOperator -notin @([Management.Automation.Language.TokenKind]::Ampersand, [Management.Automation.Language.TokenKind]::Dot)) { $text = '& ' + $text }
+                }
+                $results.Add([Management.Automation.CompletionResult]::new($text, $name, $item.ResultType, $item.ToolTip))
                 continue
             }
         }

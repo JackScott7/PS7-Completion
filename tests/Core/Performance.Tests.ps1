@@ -64,4 +64,11 @@ Describe 'Performance comparison gates' {
         $report | ConvertTo-Json -Depth 8 | Set-Content $current
         { & (Join-Path $root 'scripts/Compare-Performance.ps1') -Baseline $baseline -Current $current } | Should -Throw '*environment*'
     }
+    It 'flags a query that becomes empty after a nonempty baseline' {
+        $report.Queries['Processes/miss'] = @{Timing=@{P95Ms=10};ResultCounts=@(100,101);Failures=0}
+        $report | ConvertTo-Json -Depth 8 | Set-Content $baseline
+        $report.Queries['Processes/miss'].ResultCounts = @(0,0)
+        $report | ConvertTo-Json -Depth 8 | Set-Content $current
+        { & (Join-Path $root 'scripts/Compare-Performance.ps1') -Baseline $baseline -Current $current } | Should -Throw '*investigate live data changes*'
+    }
 }

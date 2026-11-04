@@ -5,6 +5,7 @@ BeforeAll {
     $second = Join-Path $TestDrive 'second'
     $null = New-Item -ItemType Directory -Path $first, $second
     $null = New-Item -ItemType File -Path (Join-Path $first 'ps7fixture.exe'), (Join-Path $second 'ps7fixture.exe')
+    $null = New-Item -ItemType File -Path (Join-Path $first 'ps7 spaced.exe')
     $env:PATH = "$first;$second;$originalPath"
 }
 AfterAll {
@@ -26,6 +27,20 @@ Describe 'Extensionless executable completion' {
         (TabExpansion2 'ps7fixture.ex' 13).CompletionMatches.CompletionText | Should -Contain 'ps7fixture.exe'
         $line = Join-Path $first 'ps7fix'
         (TabExpansion2 $line $line.Length).CompletionMatches.CompletionText | Should -Match '\.exe'
+    }
+    It 'inserts a quoted executable name with a call operator when required' {
+        foreach ($line in @('ps7', '& ps7')) {
+            $completion = TabExpansion2 $line $line.Length
+            $match = $completion.CompletionMatches | Where-Object ListItemText -EQ 'ps7 spaced' | Select-Object -First 1
+            $match | Should -Not -BeNullOrEmpty
+            $completed = $line.Substring(0, $completion.ReplacementIndex) + $match.CompletionText + $line.Substring($completion.ReplacementIndex + $completion.ReplacementLength)
+            $tokens = $null; $errors = $null
+            $ast = [Management.Automation.Language.Parser]::ParseInput($completed, [ref]$tokens, [ref]$errors)
+            $errors.Count | Should -Be 0
+            $command = $ast.Find({ param($node) $node -is [Management.Automation.Language.CommandAst] }, $true)
+            $command.GetCommandName() | Should -Be 'ps7 spaced'
+            $command.InvocationOperator.ToString() | Should -Be 'Ampersand'
+        }
     }
     It 'keeps the executable extension when an alias takes precedence' {
         Set-Alias -Name ps7fixture -Value Get-Item -Scope Global

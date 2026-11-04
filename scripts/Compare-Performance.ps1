@@ -33,6 +33,11 @@ $comparisons = foreach ($key in ($old.Keys | Sort-Object)) {
     $a = $old[$key]; $b = $new[$key]
     if ($b.ContainsKey('Failures') -and $b.Failures -gt 0) { $correctness.Add("$key has failed samples") }
     if ($b.ContainsKey('CachePrimed') -and -not $b.CachePrimed) { $correctness.Add("$key was not a cache hit") }
+    if ($key.StartsWith('Queries/') -and $b.ContainsKey('ResultCounts') -and
+        @($a.ResultCounts | Where-Object { $_ -gt 0 }).Count -and
+        @($b.ResultCounts | Where-Object { $_ -le 0 }).Count) {
+        $correctness.Add("$key returned no results after a nonempty baseline; investigate live data changes")
+    }
     if ($b.ContainsKey('ResultCounts') -and -not $key.StartsWith('Queries/')) {
         if (@($b.ResultCounts | Where-Object { $_ -le 0 }).Count) { $correctness.Add("$key returned no results") }
         if (@(Compare-Object @($a.ResultCounts | Sort-Object -Unique) @($b.ResultCounts | Sort-Object -Unique)).Count) {

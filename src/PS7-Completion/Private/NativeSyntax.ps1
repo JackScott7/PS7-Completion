@@ -9,7 +9,14 @@ function New-PS7SyntaxNode {
 }
 
 function Invoke-PS7SyntaxCompletion {
-    param($Context, [hashtable] $Syntax)
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', 'CaseInsensitive', Justification = 'The nested key lookup reads this option.')]
+    [CmdletBinding()]
+    param($Context, [hashtable] $Syntax, [switch] $CaseInsensitive)
+    function Find-SyntaxKey($Keys, [string] $Value) {
+        foreach ($key in $Keys) {
+            if (($CaseInsensitive -and $key -ieq $Value) -or (-not $CaseInsensitive -and $key -ceq $Value)) { return $key }
+        }
+    }
     $node = $Syntax
     $pending = ''
     $remaining = 0
@@ -24,21 +31,24 @@ function Invoke-PS7SyntaxCompletion {
             continue
         }
         if ($argument -ceq '--') { return }
-        if ($node.Options.ContainsKey($argument)) {
-            $remaining = $node.Options[$argument]
-            if ($remaining) { $pending = $argument }
+        $option = Find-SyntaxKey $node.Options.Keys $argument
+        if ($null -ne $option) {
+            $remaining = $node.Options[$option]
+            if ($remaining) { $pending = $option }
             continue
         }
         if ($argument.StartsWith('-')) {
             $parts = $argument.Split('=', 2)
-            if ($parts.Count -eq 2 -and $node.Options.ContainsKey($parts[0]) -and $node.Options[$parts[0]] -eq 1) {
-                if ($node.StopAfterOperands -ccontains $parts[0]) { return }
+            $option = Find-SyntaxKey $node.Options.Keys $parts[0]
+            if ($parts.Count -eq 2 -and $null -ne $option -and $node.Options[$option] -eq 1) {
+                if ($node.StopAfterOperands -ccontains $option) { return }
                 continue
             }
             return
         }
-        if (-not $positional -and $node.Children.ContainsKey($argument) -and @($node.Children.Keys) -ccontains $argument) {
-            $node = $node.Children[$argument]
+        $child = Find-SyntaxKey $node.Children.Keys $argument
+        if (-not $positional -and $null -ne $child) {
+            $node = $node.Children[$child]
             continue
         }
         if ($node.Children.Count -or $node.StopAtPositional) { return }
@@ -47,6 +57,15 @@ function Invoke-PS7SyntaxCompletion {
     if ($pending) {
         if (@($node.Values.Keys) -ccontains $pending) {
             New-PS7CompletionResult -Candidate $node.Values[$pending] -WordToComplete $Context.WordToComplete
+        }
+        return
+    }
+    if ($Context.WordToComplete.StartsWith('-') -and $Context.WordToComplete.Contains('=')) {
+        $parts = $Context.WordToComplete.Split('=', 2)
+        $option = Find-SyntaxKey $node.Options.Keys $parts[0]
+        if ($null -ne $option -and $node.Options[$option] -eq 1 -and @($node.Values.Keys) -ccontains $option) {
+            $candidates = @($node.Values[$option] | ForEach-Object { $parts[0] + '=' + $_ })
+            New-PS7CompletionResult -Candidate $candidates -WordToComplete $Context.WordToComplete
         }
         return
     }
