@@ -9,6 +9,7 @@ on:
   push:
     paths:
       - '.github/workflows/winget-smoke.yml'
+      - 'packaging/winget/**'
 permissions:
   contents: read
 jobs:
