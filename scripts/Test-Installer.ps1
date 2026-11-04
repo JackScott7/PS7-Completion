@@ -61,8 +61,23 @@ Invoke-InstallerFile $uninstaller (Join-Path $logRoot 'uninstall.log')
 if (Test-Path $baseManifest) { throw 'Uninstall retained an installer-owned old manifest.' }
 if (Test-Path (Join-Path $installRoot "$($next.Version)/PS7-Completion.psd1")) { throw 'Uninstall retained the new manifest.' }
 if (-not (Test-Path -LiteralPath $userFile)) { throw 'Uninstall removed a user-added file.' }
+# Downgrades are supported by uninstalling first, then installing the older release.
+Invoke-InstallerFile $base.Installer (Join-Path $logRoot 'downgrade-reinstall.log')
+foreach ($file in Get-ChildItem -LiteralPath $base.Payload -Recurse -File) {
+    $relative = [IO.Path]::GetRelativePath($base.Payload, $file.FullName)
+    $installed = Join-Path $installRoot "$($base.Version)/$relative"
+    if (-not (Test-Path -LiteralPath $installed) -or (Get-FileHash -LiteralPath $installed).Hash -ne (Get-FileHash -LiteralPath $file.FullName).Hash) {
+        throw "Downgrade payload mismatch: $relative"
+    }
+}
+$version = & (Join-Path $PSHOME 'pwsh.exe') -NoProfile -NonInteractive -Command 'Import-Module PS7-Completion -ErrorAction Stop; (Get-Module PS7-Completion).Version.ToString()'
+if ($LASTEXITCODE -ne 0 -or $version -ne $base.Version) { throw 'New shell did not discover the reinstalled older version.' }
+Invoke-InstallerFile $uninstaller (Join-Path $logRoot 'downgrade-uninstall.log')
+if (Test-Path -LiteralPath $baseManifest) { throw 'Final uninstall retained an installer-owned manifest.' }
+if (-not (Test-Path -LiteralPath $userFile)) { throw 'Downgrade lifecycle removed a user-added file.' }
 if ($beforePath -ne $env:PATH -or $beforeModulePath -ne $env:PSModulePath) { throw 'Search paths changed.' }
 @{ Result = 'Passed'; Base = $base.Version; Upgrade = $next.Version; ExplicitUpgrade = [bool]$UpgradeBuildMetadata;
+    DowngradeReinstall = 'Passed';
     BaseSHA256=(Get-FileHash $base.Installer).Hash; UpgradeSHA256=(Get-FileHash $next.Installer).Hash;
     PowerShell = $PSVersionTable.PSVersion.ToString(); OS = $PSVersionTable.OS } | ConvertTo-Json | Set-Content (Join-Path $logRoot 'result.json')
 }
