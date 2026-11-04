@@ -64,12 +64,24 @@ jobs:
             Get-Content $stdout -Tail 30 | Out-Host
             Get-Content $stderr -Tail 30 | Out-Host
             "Runner is elevated: $(([Security.Principal.WindowsPrincipal]::new([Security.Principal.WindowsIdentity]::GetCurrent())).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))" | Out-Host
-            Get-CimInstance Win32_Process | Where-Object { $_.Name -match 'winget|PS7-Completion|setup|consent|AppInstaller|\.tmp$' -or $_.ParentProcessId -eq $process.Id } | Select-Object Name,ProcessId,ParentProcessId,CommandLine | Format-List | Out-Host
+            Get-CimInstance Win32_Process | Where-Object { $_.Name -match 'winget|PS7-Completion|setup|consent|AppInstaller|smartscreen|securityhealth|explorer|\.tmp$' -or $_.ParentProcessId -eq $process.Id } | Select-Object Name,ProcessId,ParentProcessId,CommandLine | Format-List | Out-Host
             if (Test-Path $installerLog) { Get-Content $installerLog -Tail 80 | Out-Host }
             $diagnostics = Join-Path $env:LOCALAPPDATA 'Packages/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe/LocalState/DiagOutputDir'
             $latestLog = Get-ChildItem -LiteralPath $diagnostics -Filter 'WinGet-*.log' -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
             if ($latestLog) { Get-Content -LiteralPath $latestLog.FullName -Tail 80 | Out-Host }
             Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+            # Compare direct launch of the same published installer with an Internet zone marker.
+            $candidate = Join-Path $directory "PS7-Completion-$env:RELEASE_VERSION-windows-x64.exe"
+            Set-Content -LiteralPath $candidate -Stream Zone.Identifier -Value "[ZoneTransfer]`r`nZoneId=3"
+            $probe = Start-Job -ArgumentList $candidate -ScriptBlock {
+              param($File)
+              $p = Start-Process -FilePath $File -ArgumentList '/SP-', '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART' -WindowStyle Hidden -PassThru -Wait
+              $p.ExitCode
+            }
+            $finished = Wait-Job $probe -Timeout 20
+            if ($finished) { "Direct Internet-marked launch exit: $(Receive-Job $probe)" | Out-Host }
+            else { 'Direct Internet-marked launch also timed out.' | Out-Host; Stop-Job $probe }
+            Remove-Job $probe -Force
             throw 'WinGet installation timed out after 90 seconds.'
           }
           Get-Content $stdout | Out-Host
