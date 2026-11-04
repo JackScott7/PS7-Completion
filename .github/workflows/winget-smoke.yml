@@ -55,8 +55,23 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Manifest validation failed.' }
           winget settings --enable LocalManifestFiles
           if ($LASTEXITCODE -ne 0) { throw 'Could not enable local manifests.' }
-          winget install --manifest $manifest --silent --accept-package-agreements --disable-interactivity
-          if ($LASTEXITCODE -ne 0) { throw 'WinGet installation failed.' }
+          $installerLog = Join-Path $directory 'installer.log'
+          $stdout = Join-Path $directory 'winget-out.txt'
+          $stderr = Join-Path $directory 'winget-error.txt'
+          $arguments = @('install', '--manifest', "`"$manifest`"", '--silent', '--accept-package-agreements', '--disable-interactivity', '--log', "`"$installerLog`"")
+          $process = Start-Process -FilePath (Get-Command winget.exe).Source -ArgumentList $arguments -WindowStyle Hidden -RedirectStandardOutput $stdout -RedirectStandardError $stderr -PassThru
+          if (-not $process.WaitForExit(90000)) {
+            Get-CimInstance Win32_Process | Where-Object { $_.Name -match 'winget|PS7-Completion|setup|\.tmp$' } | Select-Object Name,ProcessId,ParentProcessId,CommandLine | Format-List | Out-Host
+            if (Test-Path $installerLog) { Get-Content $installerLog -Tail 80 | Out-Host }
+            Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+            throw 'WinGet installation timed out after 90 seconds.'
+          }
+          Get-Content $stdout | Out-Host
+          if (Test-Path $stderr) { Get-Content $stderr | Out-Host }
+          if ($process.ExitCode -ne 0) {
+            if (Test-Path $installerLog) { Get-Content $installerLog -Tail 80 | Out-Host }
+            throw "WinGet installation failed with exit code $($process.ExitCode)."
+          }
           $installed = & (Join-Path $PSHOME 'pwsh.exe') -NoProfile -NonInteractive -Command 'Import-Module PS7-Completion -ErrorAction Stop; (Get-Module PS7-Completion).Version.ToString()'
           if ($LASTEXITCODE -ne 0 -or $installed -ne $env:RELEASE_VERSION) { throw 'Installed module version mismatch.' }
           $userFile = Join-Path $root "$env:RELEASE_VERSION/user-added.txt"
