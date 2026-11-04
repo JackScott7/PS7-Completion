@@ -42,11 +42,20 @@ Describe 'Release payload' {
         ((Get-FileHash $installer).Hash + '  ' + (Split-Path $installer -Leaf)) | Set-Content $checksums
         Set-Content (Join-Path $TestDrive 'PS7-Completion.psd1') "@{ ModuleVersion='0.1.0' }"
         @{ Version='0.1.0'; Installer=$installer; Checksums=$checksums; Payload=$TestDrive } | ConvertTo-Json | Set-Content $metadata
-        $path = & (Join-Path $projectRoot 'scripts/New-WinGetManifest.ps1') -BuildMetadata $metadata -OutputDirectory (Join-Path $TestDrive 'manifest')
-        $yaml = Get-Content $path -Raw
-        $yaml | Should -Match ((Get-FileHash $installer).Hash)
-        $yaml | Should -Match 'PackageIdentifier: JackScott7.PS7-Completion'
-        $yaml | Should -Not -Match '__[A-Z_]+__'
+        $paths = @(& (Join-Path $projectRoot 'scripts/New-WinGetManifest.ps1') -BuildMetadata $metadata -OutputDirectory (Join-Path $TestDrive 'manifest'))
+        $paths.Count | Should -Be 3
+        $paths | Split-Path -Leaf | Should -Contain 'JackScott7.PS7-Completion.installer.yaml'
+        $paths | Split-Path -Leaf | Should -Contain 'JackScott7.PS7-Completion.locale.en-US.yaml'
+        $paths | Split-Path -Leaf | Should -Contain 'JackScott7.PS7-Completion.yaml'
+        foreach ($path in $paths) {
+            $yaml = Get-Content $path -Raw
+            $yaml | Should -Match 'PackageIdentifier: JackScott7.PS7-Completion'
+            $yaml | Should -Match 'PackageVersion: 0.1.0'
+            $yaml | Should -Not -Match '__[A-Z_]+__'
+        }
+        $installerYaml = Get-Content ($paths | Where-Object { $_ -like '*.installer.yaml' }) -Raw
+        $installerYaml | Should -Match ((Get-FileHash $installer).Hash)
+        $installerYaml | Should -Match 'ElevationRequirement: elevationRequired'
         Set-Content $installer 'tampered bytes'
         { & (Join-Path $projectRoot 'scripts/New-WinGetManifest.ps1') -BuildMetadata $metadata -OutputDirectory (Join-Path $TestDrive 'manifest') } | Should -Throw '*checksum mismatch*'
         ((Get-FileHash $installer).Hash + '  ' + (Split-Path $installer -Leaf)) | Set-Content $checksums
