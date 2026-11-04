@@ -4,6 +4,7 @@ PackageVersion: __VERSION__
 InstallerType: inno
 Scope: machine
 ElevationRequirement: elevationRequired
+ProductCode: '{D1452431-C5FC-4982-8B42-334EFA8ABBC0}_is1'
 Installers:
   - Architecture: x64
     InstallerUrl: https://github.com/JackScott7/PS7-Completion/releases/download/v__VERSION__/PS7-Completion-__VERSION__-windows-x64.exe

@@ -29,6 +29,9 @@ $logRoot = Join-Path $root 'dist/installer-evidence'
 New-Item -ItemType Directory $logRoot -Force | Out-Null
 try {
 Invoke-InstallerFile $base.Installer (Join-Path $logRoot 'install.log')
+$productCode = '{D1452431-C5FC-4982-8B42-334EFA8ABBC0}_is1'
+$productKey = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$productCode"
+if (-not (Test-Path -LiteralPath $productKey)) { throw 'Installer product code is missing from the machine uninstall registry.' }
 $baseManifest = Join-Path $installRoot "$($base.Version)/PS7-Completion.psd1"
 if (-not (Test-Path $baseManifest)) { throw 'Initial installation is missing.' }
 foreach ($file in Get-ChildItem -LiteralPath $base.Payload -Recurse -File) {

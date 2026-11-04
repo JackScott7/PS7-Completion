@@ -56,6 +56,7 @@ Describe 'Release payload' {
         $installerYaml = Get-Content ($paths | Where-Object { $_ -like '*.installer.yaml' }) -Raw
         $installerYaml | Should -Match ((Get-FileHash $installer).Hash)
         $installerYaml | Should -Match 'ElevationRequirement: elevationRequired'
+        $installerYaml | Should -Match ([regex]::Escape("ProductCode: '{D1452431-C5FC-4982-8B42-334EFA8ABBC0}_is1'"))
         Set-Content $installer 'tampered bytes'
         { & (Join-Path $projectRoot 'scripts/New-WinGetManifest.ps1') -BuildMetadata $metadata -OutputDirectory (Join-Path $TestDrive 'manifest') } | Should -Throw '*checksum mismatch*'
         ((Get-FileHash $installer).Hash + '  ' + (Split-Path $installer -Leaf)) | Set-Content $checksums
