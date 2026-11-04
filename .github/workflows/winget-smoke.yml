@@ -61,8 +61,14 @@ jobs:
           $arguments = @('install', '--manifest', "`"$manifest`"", '--silent', '--accept-package-agreements', '--disable-interactivity', '--log', "`"$installerLog`"")
           $process = Start-Process -FilePath (Get-Command winget.exe).Source -ArgumentList $arguments -WindowStyle Hidden -RedirectStandardOutput $stdout -RedirectStandardError $stderr -PassThru
           if (-not $process.WaitForExit(90000)) {
-            Get-CimInstance Win32_Process | Where-Object { $_.Name -match 'winget|PS7-Completion|setup|\.tmp$' } | Select-Object Name,ProcessId,ParentProcessId,CommandLine | Format-List | Out-Host
+            Get-Content $stdout -Tail 30 | Out-Host
+            Get-Content $stderr -Tail 30 | Out-Host
+            "Runner is elevated: $(([Security.Principal.WindowsPrincipal]::new([Security.Principal.WindowsIdentity]::GetCurrent())).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))" | Out-Host
+            Get-CimInstance Win32_Process | Where-Object { $_.Name -match 'winget|PS7-Completion|setup|consent|AppInstaller|\.tmp$' -or $_.ParentProcessId -eq $process.Id } | Select-Object Name,ProcessId,ParentProcessId,CommandLine | Format-List | Out-Host
             if (Test-Path $installerLog) { Get-Content $installerLog -Tail 80 | Out-Host }
+            $diagnostics = Join-Path $env:LOCALAPPDATA 'Packages/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe/LocalState/DiagOutputDir'
+            $latestLog = Get-ChildItem -LiteralPath $diagnostics -Filter 'WinGet-*.log' -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+            if ($latestLog) { Get-Content -LiteralPath $latestLog.FullName -Tail 80 | Out-Host }
             Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
             throw 'WinGet installation timed out after 90 seconds.'
           }
