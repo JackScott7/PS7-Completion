@@ -1,6 +1,6 @@
 # PS7-Completion
 
-Tab completion for command-line tools in PowerShell 7.4+ on Windows.
+Tab completion for command-line tools in PowerShell 7.4+ on 64-bit Windows.
 
 ## Install
 
@@ -8,9 +8,17 @@ Tab completion for command-line tools in PowerShell 7.4+ on Windows.
 2. Run the installer and open a new PowerShell session.
 3. Run `Import-Module PS7-Completion` to start using completions.
 
+Install PowerShell 7.4 or later separately before importing the module. The
+installer requires administrator permission and does not install PowerShell.
+Release installers are unsigned, so Windows may display a publisher warning.
+
 To load completions in every new session, add `Import-Module PS7-Completion`
 to your [PowerShell profile](https://learn.microsoft.com/powershell/module/microsoft.powershell.core/about/about_profiles).
 The installer does not change your profile.
+
+After upgrading or uninstalling, restart existing PowerShell sessions. Upgrades
+retain previously installed module versions; a new session loads the newest
+installed version by default. To install an older version, uninstall first.
 
 ## Supported tools
 
