@@ -27,6 +27,31 @@ Describe 'Release payload' {
         Get-Content (Join-Path $build.Payload 'LICENSE') -Raw | Should -Match '^MIT License'
         Join-Path $build.Payload 'Workers/Query.ps1' | Should -Exist
     }
+    It 'uses the safe registry parser when the staged data changes' {
+        $build = & (Join-Path $projectRoot 'scripts/Build.ps1')
+        $registry = Join-Path $build.Payload 'Registry.psd1'
+        Add-Content -LiteralPath $registry -Value '# changed but valid'
+        try {
+            Get-Module PS7-Completion | Remove-Module -Force
+            Import-Module (Join-Path $build.Payload 'PS7-Completion.psd1') -Force
+            @(Get-PS7CompletionProvider).Count | Should -Be 46
+            Get-Module PS7-Completion | Remove-Module -Force
+            $changed = (Get-Content -LiteralPath $registry -Raw).Replace("'ssh.exe'", "'sshfixture.exe'")
+            Set-Content -LiteralPath $registry -Value $changed
+            Import-Module (Join-Path $build.Payload 'PS7-Completion.psd1') -Force
+            (Get-PS7CompletionProvider | Where-Object Name -EQ ssh).Commands | Should -Contain 'sshfixture.exe'
+            Get-Module PS7-Completion | Remove-Module -Force
+            $global:PS7RegistryFixtureExecuted = $false
+            Set-Content -LiteralPath $registry -Value '$global:PS7RegistryFixtureExecuted = $true; throw "must not execute"'
+            { Import-Module (Join-Path $build.Payload 'PS7-Completion.psd1') -Force -ErrorAction Stop } | Should -Throw
+            $global:PS7RegistryFixtureExecuted | Should -BeFalse
+        }
+        finally {
+            Get-Module PS7-Completion | Remove-Module -Force
+            Remove-Variable PS7RegistryFixtureExecuted -Scope Global -ErrorAction SilentlyContinue
+            Import-Module (Join-Path $projectRoot 'src/PS7-Completion/PS7-Completion.psd1') -Force
+        }
+    }
     It 'keeps source version unchanged for upgrade fixtures' {
         $sourceManifest = Join-Path $projectRoot 'src/PS7-Completion/PS7-Completion.psd1'
         $before = Get-Content $sourceManifest -Raw

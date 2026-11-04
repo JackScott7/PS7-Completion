@@ -50,6 +50,16 @@ $comparisons = foreach ($key in ($old.Keys | Sort-Object)) {
     [pscustomobject]@{ Case=$key; BeforeP95Ms=$a.Timing.P95Ms; AfterP95Ms=$b.Timing.P95Ms; LimitMs=$limit; Regressed=$regressed }
 }
 if ($after.FailedProviders.Count) { $correctness.Add('One or more providers failed') }
+if ($after.ContainsKey('Worker')) {
+    foreach ($kind in $after.Worker.Keys) {
+        if ($kind -eq 'Startup') {
+            if ($after.Worker[$kind].Failures -gt 0) { $correctness.Add('Worker startup has failed samples') }
+        }
+        elseif (@($after.Worker[$kind] | Where-Object { -not $_.Success }).Count) {
+            $correctness.Add("Worker/$kind has failed samples")
+        }
+    }
+}
 $result = [pscustomobject]@{ CorrectnessFailures=$correctness.ToArray(); TimingRegressions=$regressions.ToArray(); Comparisons=@($comparisons) }
 if ($OutputPath) { $result | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $OutputPath }
 if ($correctness.Count) { throw ($correctness -join '; ') }

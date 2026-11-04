@@ -29,6 +29,30 @@ $helpers = foreach ($folder in @('Private','Public')) {
 $pattern = '(?s)# BEGIN RUNTIME LOAD.*?# END RUNTIME LOAD'
 if ([regex]::Matches($moduleText, $pattern).Count -ne 1) { throw 'Runtime assembly markers missing or ambiguous.' }
 $assembled = [regex]::Replace($moduleText, $pattern, [Text.RegularExpressions.MatchEvaluator]{  $helpers -join "`n" })
+# Embed a validated registry snapshot in the staged runtime. A hash check keeps
+# modifications to Registry.psd1 on the original safe-parser path at import.
+$registryPath = Join-Path $payload 'Registry.psd1'
+$registry = Import-PowerShellDataFile -LiteralPath $registryPath
+$registryHash = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([IO.File]::ReadAllBytes($registryPath)))
+$registryEntries = foreach ($name in $registry.Keys) {
+    $entry = $registry[$name]
+    if ($name -notmatch '^[a-zA-Z][a-zA-Z0-9_-]{0,63}$' -or $entry -isnot [hashtable] -or
+        $entry.File -isnot [string] -or $entry.Commands -isnot [array] -or -not $entry.Commands.Count) {
+        throw 'Invalid registry entry during build.'
+    }
+    $commands = foreach ($command in $entry.Commands) {
+        if ($command -isnot [string] -or $command -notmatch '^[a-zA-Z0-9][a-zA-Z0-9_.-]*$') { throw 'Invalid registry command during build.' }
+        "'$command'"
+    }
+    $file = $entry.File.Replace("'", "''")
+    "    '$name' = @{ File = '$file'; Commands = @(" + ($commands -join ',') + ') }'
+}
+$registryPattern = '(?s)# BEGIN REGISTRY LOAD(.*?)# END REGISTRY LOAD'
+$registryMatch = [regex]::Match($assembled, $registryPattern)
+if (-not $registryMatch.Success -or [regex]::Matches($assembled, $registryPattern).Count -ne 1) { throw 'Registry assembly markers missing or ambiguous.' }
+$fallback = $registryMatch.Groups[1].Value
+$registryRuntime = "if ([Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([IO.File]::ReadAllBytes([IO.Path]::Combine(`$PSScriptRoot, 'Registry.psd1')))) -eq '$registryHash') {`n`$builtins = @{`n" + ($registryEntries -join "`n") + "`n}`n} else {`n" + $fallback + "`n}"
+$assembled = [regex]::Replace($assembled, $registryPattern, [Text.RegularExpressions.MatchEvaluator]{ $registryRuntime })
 $tokens = $null; $parseErrors = $null
 $null = [Management.Automation.Language.Parser]::ParseInput($assembled, [ref]$tokens, [ref]$parseErrors)
 if ($parseErrors.Count) { throw 'Assembled runtime failed syntax validation.' }

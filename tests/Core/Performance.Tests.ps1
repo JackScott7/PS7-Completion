@@ -71,4 +71,9 @@ Describe 'Performance comparison gates' {
         $report | ConvertTo-Json -Depth 8 | Set-Content $current
         { & (Join-Path $root 'scripts/Compare-Performance.ps1') -Baseline $baseline -Current $current } | Should -Throw '*investigate live data changes*'
     }
+    It 'rejects a failed diagnostic worker sample' {
+        $report.Worker = @{ Tasks=@(@{Success=$true}, @{Success=$false;Timeout=$true}) }
+        $report | ConvertTo-Json -Depth 8 | Set-Content $current
+        { & (Join-Path $root 'scripts/Compare-Performance.ps1') -Baseline $baseline -Current $current } | Should -Throw '*Worker/Tasks has failed samples*'
+    }
 }

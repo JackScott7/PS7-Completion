@@ -9,6 +9,7 @@
 ### Changed
 
 - Document installer prerequisites, unsigned publisher warnings, and upgrade behavior.
+- Reduce installed-module import work while retaining validation of modified registry data.
 
 ### Fixed
 
