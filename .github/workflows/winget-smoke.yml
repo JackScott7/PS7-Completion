@@ -50,7 +50,8 @@ jobs:
           if (Test-Path -LiteralPath $root) { throw 'Refusing to test over an existing installation.' }
           winget --version
           if ($LASTEXITCODE -ne 0) { throw 'WinGet is unavailable.' }
-          winget validate --manifest $manifest
+          # The hosted image may have an older client that warns about newer schema headers.
+          winget validate --manifest $manifest --ignore-warnings
           if ($LASTEXITCODE -ne 0) { throw 'Manifest validation failed.' }
           winget settings --enable LocalManifestFiles
           if ($LASTEXITCODE -ne 0) { throw 'Could not enable local manifests.' }
