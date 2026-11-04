@@ -76,6 +76,7 @@ Describe 'Release payload' {
             $yaml = Get-Content $path -Raw
             $yaml | Should -Match 'PackageIdentifier: JackScott7.PS7-Completion'
             $yaml | Should -Match 'PackageVersion: 0.1.0'
+            $yaml | Should -Match '(?m)^ManifestVersion: 1\.12\.0\s*$'
             $yaml | Should -Not -Match '__[A-Z_]+__'
         }
         $installerYaml = Get-Content ($paths | Where-Object { $_ -like '*.installer.yaml' }) -Raw

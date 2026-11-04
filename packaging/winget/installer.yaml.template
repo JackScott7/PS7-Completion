@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.6.0.schema.json
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.12.0.schema.json
 PackageIdentifier: JackScott7.PS7-Completion
 PackageVersion: __VERSION__
 InstallerType: inno
@@ -10,4 +10,4 @@ Installers:
     InstallerUrl: https://github.com/JackScott7/PS7-Completion/releases/download/v__VERSION__/PS7-Completion-__VERSION__-windows-x64.exe
     InstallerSha256: __SHA256__
 ManifestType: installer
-ManifestVersion: 1.6.0
+ManifestVersion: 1.12.0

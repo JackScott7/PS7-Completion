@@ -39,6 +39,7 @@ jobs:
             ConvertTo-Json | Set-Content (Join-Path $directory 'build.json')
           ./scripts/New-WinGetManifest.ps1 -BuildMetadata (Join-Path $directory 'build.json') -OutputDirectory (Join-Path $directory 'manifest')
       - name: Install and uninstall using WinGet
+        timeout-minutes: 3
         env:
           RELEASE_VERSION: ${{ inputs.version || '0.1.9' }}
         run: |
