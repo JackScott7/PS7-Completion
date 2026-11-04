@@ -4,7 +4,8 @@ function script:Read-PS7SshConfig {
     param([Parameter(Mandatory)][string] $Path, [Diagnostics.Stopwatch] $Clock)
     $state = @{
         Hosts = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
-        Visited = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+        Active = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+        FileVisits = 0
         Dependencies = [Collections.Generic.List[object]]::new()
         DependencyPaths = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
         Items = @{}
@@ -59,16 +60,18 @@ function script:Read-PS7SshConfig {
     }
     function Read-ConfigFile([string] $Candidate, [int] $Depth) {
         Assert-TimeBudget
-        if ($Depth -gt 8 -or $state.Visited.Count -ge 64) { throw 'SSH Include limit exceeded.' }
+        if ($Depth -gt 8) { throw 'SSH Include limit exceeded.' }
         if (-not (Test-LocalPath $Candidate)) { return }
         $full = [IO.Path]::GetFullPath($Candidate)
-        if (-not $state.Visited.Add($full)) { return }
+        if (-not $state.Active.Add($full)) { return }
+        try {
+        if (++$state.FileVisits -gt 64) { throw 'SSH Include limit exceeded.' }
         Add-Dependency $full
         $item = Get-LocalItem $full
         if (-not $item -or $item.PSIsContainer) { return }
         if ($item.Length -gt 1048576 -or ($state.Bytes + $item.Length) -gt 4194304) { throw 'SSH config size limit exceeded.' }
         $state.Bytes += $item.Length
-        try { $lines = [IO.File]::ReadAllLines($full) } catch { return }
+        $lines = [IO.File]::ReadAllLines($full)
         foreach ($line in $lines) {
             Assert-TimeBudget
             if ($line -notmatch '^\s*(Host|Include|Match)(?:\s*=\s*|\s+)(.*)$') { continue }
@@ -121,6 +124,7 @@ function script:Read-PS7SshConfig {
                 }
             }
         }
+        } finally { [void]$state.Active.Remove($full) }
     }
     Read-ConfigFile $Path 0
     @{ Hosts = @($state.Hosts | Sort-Object); Dependencies = @($state.Dependencies.ToArray()) }

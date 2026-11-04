@@ -13,6 +13,8 @@
 ### Fixed
 
 - Provide the installer's product code in WinGet metadata to support installed-package correlation.
+- Retry SSH config reads after transient failures and respect conditional state in repeated includes.
+- Treat `reg query /d` as a switch so subsequent options remain available.
 
 ## 0.1.9 - Extensionless executable names
 

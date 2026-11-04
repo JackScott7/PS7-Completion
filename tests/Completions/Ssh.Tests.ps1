@@ -3,6 +3,17 @@ BeforeAll {
     . (Join-Path $PSScriptRoot '../../src/PS7-Completion/Workers/SshConfig.ps1')
 }
 Describe 'SSH configuration parsing' {
+    It 'replays an include after Host resets conditional state' {
+        $root = Join-Path $TestDrive 'conditional-root'
+        $child = Join-Path $TestDrive 'conditional-child'
+        $hidden = Join-Path $TestDrive 'conditional-hidden'
+        Set-Content $child 'Match exec "true"'
+        Set-Content $hidden 'Host forbidden'
+        Set-Content $root @("Include `"$child`"", 'Host reset', "Include `"$child`"", "Include `"$hidden`"")
+        $hosts = (Read-PS7SshConfig $root).Hosts
+        $hosts | Should -Contain reset
+        $hosts | Should -Not -Contain forbidden
+    }
     It 'handles comments, multiple literal aliases, includes and cycles' {
         $root = Join-Path $TestDrive 'config'
         $child = Join-Path $TestDrive 'extra'

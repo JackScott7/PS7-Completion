@@ -20,6 +20,7 @@ Describe 'Developer tool provider integration' {
         @{ Line='sfc /scan'; Expected='/scannow' }
         @{ Line='dism /Scan'; Expected='/ScanHealth' }
         @{ Line='reg.exe qu'; Expected='query' }
+        @{ Line='reg query HKCU\Software /d /'; Expected='/f' }
         @{ Line='git sta'; Expected='status' }
         @{ Line='git -C repo status --s'; Expected='--short' }
         @{ Line='gh pr list --st'; Expected='--state' }
