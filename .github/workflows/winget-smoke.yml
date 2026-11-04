@@ -1,0 +1,100 @@
+name: WinGet published installer smoke test
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Published release version to test
+        required: true
+        default: '0.1.9'
+  push:
+    paths:
+      - '.github/workflows/winget-smoke.yml'
+      - 'packaging/winget/**'
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: windows-2025
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download and verify published installer
+        env:
+          RELEASE_VERSION: ${{ inputs.version || '0.1.9' }}
+        run: |
+          $version = $env:RELEASE_VERSION
+          if ($version -notmatch '^\d+\.\d+\.\d+$') { throw 'Invalid release version.' }
+          $directory = Join-Path $env:RUNNER_TEMP 'published-installer'
+          New-Item -ItemType Directory -Path $directory -Force | Out-Null
+          $name = "PS7-Completion-$version-windows-x64.exe"
+          $base = "https://github.com/JackScott7/PS7-Completion/releases/download/v$version"
+          $installer = Join-Path $directory $name
+          $checksums = Join-Path $directory 'SHA256SUMS.txt'
+          Invoke-WebRequest "$base/$name" -OutFile $installer
+          Invoke-WebRequest "$base/SHA256SUMS.txt" -OutFile $checksums
+          $build = ./scripts/Build.ps1 -Version $version
+          @{ Version=$version; Installer=$installer; Checksums=$checksums; Payload=$build.Payload } |
+            ConvertTo-Json | Set-Content (Join-Path $directory 'build.json')
+          ./scripts/New-WinGetManifest.ps1 -BuildMetadata (Join-Path $directory 'build.json') -OutputDirectory (Join-Path $directory 'manifest')
+      - name: Install and uninstall using WinGet
+        timeout-minutes: 3
+        env:
+          RELEASE_VERSION: ${{ inputs.version || '0.1.9' }}
+        run: |
+          $directory = Join-Path $env:RUNNER_TEMP 'published-installer'
+          $manifest = Join-Path $directory 'manifest'
+          $root = Join-Path $env:ProgramFiles 'PowerShell/Modules/PS7-Completion'
+          if (Test-Path -LiteralPath $root) { throw 'Refusing to test over an existing installation.' }
+          winget --version
+          if ($LASTEXITCODE -ne 0) { throw 'WinGet is unavailable.' }
+          # The hosted image may have an older client that warns about newer schema headers.
+          winget validate --manifest $manifest --ignore-warnings
+          if ($LASTEXITCODE -ne 0) { throw 'Manifest validation failed.' }
+          winget settings --enable LocalManifestFiles
+          if ($LASTEXITCODE -ne 0) { throw 'Could not enable local manifests.' }
+          $installerLog = Join-Path $directory 'installer.log'
+          $stdout = Join-Path $directory 'winget-out.txt'
+          $stderr = Join-Path $directory 'winget-error.txt'
+          $arguments = @('install', '--manifest', "`"$manifest`"", '--silent', '--accept-package-agreements', '--disable-interactivity', '--log', "`"$installerLog`"")
+          $process = Start-Process -FilePath (Get-Command winget.exe).Source -ArgumentList $arguments -WindowStyle Hidden -RedirectStandardOutput $stdout -RedirectStandardError $stderr -PassThru
+          if (-not $process.WaitForExit(90000)) {
+            Get-Content $stdout -Tail 30 | Out-Host
+            Get-Content $stderr -Tail 30 | Out-Host
+            "Runner is elevated: $(([Security.Principal.WindowsPrincipal]::new([Security.Principal.WindowsIdentity]::GetCurrent())).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))" | Out-Host
+            Get-CimInstance Win32_Process | Where-Object { $_.Name -match 'winget|PS7-Completion|setup|consent|AppInstaller|smartscreen|securityhealth|explorer|\.tmp$' -or $_.ParentProcessId -eq $process.Id } | Select-Object Name,ProcessId,ParentProcessId,CommandLine | Format-List | Out-Host
+            if (Test-Path $installerLog) { Get-Content $installerLog -Tail 80 | Out-Host }
+            $diagnostics = Join-Path $env:LOCALAPPDATA 'Packages/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe/LocalState/DiagOutputDir'
+            $latestLog = Get-ChildItem -LiteralPath $diagnostics -Filter 'WinGet-*.log' -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+            if ($latestLog) { Get-Content -LiteralPath $latestLog.FullName -Tail 80 | Out-Host }
+            Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+            # Compare direct launch of the same published installer with an Internet zone marker.
+            $candidate = Join-Path $directory "PS7-Completion-$env:RELEASE_VERSION-windows-x64.exe"
+            Set-Content -LiteralPath $candidate -Stream Zone.Identifier -Value "[ZoneTransfer]`r`nZoneId=3"
+            $probe = Start-Job -ArgumentList $candidate -ScriptBlock {
+              param($File)
+              $p = Start-Process -FilePath $File -ArgumentList '/SP-', '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART' -WindowStyle Hidden -PassThru -Wait
+              $p.ExitCode
+            }
+            $finished = Wait-Job $probe -Timeout 20
+            if ($finished) { "Direct Internet-marked launch exit: $(Receive-Job $probe)" | Out-Host }
+            else { 'Direct Internet-marked launch also timed out.' | Out-Host; Stop-Job $probe }
+            Remove-Job $probe -Force
+            throw 'WinGet installation timed out after 90 seconds.'
+          }
+          Get-Content $stdout | Out-Host
+          if (Test-Path $stderr) { Get-Content $stderr | Out-Host }
+          if ($process.ExitCode -ne 0) {
+            if (Test-Path $installerLog) { Get-Content $installerLog -Tail 80 | Out-Host }
+            throw "WinGet installation failed with exit code $($process.ExitCode)."
+          }
+          $installed = & (Join-Path $PSHOME 'pwsh.exe') -NoProfile -NonInteractive -Command 'Import-Module PS7-Completion -ErrorAction Stop; (Get-Module PS7-Completion).Version.ToString()'
+          if ($LASTEXITCODE -ne 0 -or $installed -ne $env:RELEASE_VERSION) { throw 'Installed module version mismatch.' }
+          $userFile = Join-Path $root "$env:RELEASE_VERSION/user-added.txt"
+          Set-Content -LiteralPath $userFile 'Must survive uninstall'
+          winget uninstall --manifest $manifest --silent --disable-interactivity
+          if ($LASTEXITCODE -ne 0) { throw 'WinGet uninstall failed.' }
+          if (Test-Path (Join-Path $root "$env:RELEASE_VERSION/PS7-Completion.psd1")) { throw 'Uninstall retained the module manifest.' }
+          if (-not (Test-Path -LiteralPath $userFile)) { throw 'Uninstall removed a user-added file.' }

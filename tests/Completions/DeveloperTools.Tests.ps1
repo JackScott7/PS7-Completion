@@ -11,6 +11,8 @@ Describe 'Developer tool provider integration' {
         @{ Line='icacls /ver'; Expected='/verify' }
         @{ Line='net us'; Expected='use' }
         @{ Line='net.exe user /a'; Expected='/add' }
+        @{ Line='net USER /a'; Expected='/add' }
+        @{ Line='reg QUERY HKCU\Software /D /'; Expected='/f' }
         @{ Line='npx --ye'; Expected='--yes' }
         @{ Line='pnpm.cmd ins'; Expected='install' }
         @{ Line='yarn.ps1 ad'; Expected='add' }
@@ -20,12 +22,14 @@ Describe 'Developer tool provider integration' {
         @{ Line='sfc /scan'; Expected='/scannow' }
         @{ Line='dism /Scan'; Expected='/ScanHealth' }
         @{ Line='reg.exe qu'; Expected='query' }
+        @{ Line='reg query HKCU\Software /d /'; Expected='/f' }
         @{ Line='git sta'; Expected='status' }
         @{ Line='git -C repo status --s'; Expected='--short' }
         @{ Line='gh pr list --st'; Expected='--state' }
         @{ Line='gh pr list --state m'; Expected='merged' }
         @{ Line='rg --col'; Expected='--color' }
         @{ Line='rg --color a'; Expected='always' }
+        @{ Line='cargo --color=a'; Expected='--color=always' }
         @{ Line='jq --arg name value --r'; Expected='--raw-output' }
         @{ Line='jq -R --s'; Expected='--slurp' }
         @{ Line='python -m p'; Expected='pip' }
@@ -86,6 +90,7 @@ Describe 'Developer tool provider integration' {
     }
     InModuleScope PS7-Completion {
         It 'suppresses provider suggestions for <Line>' -ForEach @(
+            @{ Name='dism'; Line='dism /Online /logpath ' }
             @{ Name='npx'; Line='npx --package ' }
             @{ Name='npx'; Line='npx tool ' }
             @{ Name='pnpm'; Line='pnpm exec tool ' }

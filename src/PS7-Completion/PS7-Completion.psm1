@@ -39,12 +39,14 @@ if ($Configuration.ContainsKey('NativeCompletionScripts')) {
         $nativeScriptPaths += $resolved
     }
 }
+# BEGIN REGISTRY LOAD
 $registryTokens = $null
 $registryErrors = $null
 $registryAst = [Management.Automation.Language.Parser]::ParseFile([IO.Path]::Combine($PSScriptRoot, 'Registry.psd1'), [ref]$registryTokens, [ref]$registryErrors)
 if ($registryErrors.Count -or $registryAst.EndBlock.Statements.Count -ne 1) { throw 'Invalid registry data.' }
 $builtins = $registryAst.EndBlock.Statements[0].PipelineElements[0].Expression.SafeGetValue()
 if ($builtins -isnot [hashtable]) { throw 'Registry must be a data hashtable.' }
+# END REGISTRY LOAD
 # Validate every entry before registering any callbacks.
 $commands = @{}
 $importAliases = @{}

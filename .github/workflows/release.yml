@@ -68,12 +68,14 @@ jobs:
             if ($env:RELEASE_REF -ne "v$version") { throw 'Tag and module version mismatch.' }
             $mode = @('--draft', '--verify-tag')
           }
-          gh release create "v$version" --target '${{ github.sha }}' @mode --title "PS7-Completion $version" --notes-file $notes $build.Assets ./dist/winget/JackScott7.PS7-Completion.yaml
+          $manifests = @(Get-ChildItem ./dist/winget/*.yaml | ForEach-Object FullName)
+          if ($manifests.Count -ne 3) { throw 'Expected three WinGet manifest files.' }
+          gh release create "v$version" --target '${{ github.sha }}' @mode --title "PS7-Completion $version" --notes-file $notes $build.Assets $manifests
           if ($LASTEXITCODE -ne 0) { throw 'Draft release creation failed.' }
           $download = Join-Path $env:RUNNER_TEMP 'release-download'
           gh release download "v$version" --dir $download
           if ($LASTEXITCODE -ne 0) { throw 'Release download verification failed.' }
-          foreach ($asset in @($build.Assets) + './dist/winget/JackScott7.PS7-Completion.yaml') {
+          foreach ($asset in @($build.Assets) + $manifests) {
             $copy = Join-Path $download (Split-Path $asset -Leaf)
             if ((Get-FileHash $asset).Hash -ne (Get-FileHash $copy).Hash) { throw 'Uploaded release asset hash mismatch.' }
           }

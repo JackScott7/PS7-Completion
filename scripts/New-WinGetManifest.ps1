@@ -17,10 +17,16 @@ if ($checksum.Count -ne 1 -or $checksum[0] -notmatch $pattern -or $Matches[1] -n
 if (-not $build.Payload -or (Import-PowerShellDataFile (Join-Path $build.Payload 'PS7-Completion.psd1')).ModuleVersion -ne $build.Version) {
     throw 'Payload/package version mismatch.'
 }
-$template = Get-Content (Join-Path $PSScriptRoot '../packaging/winget/manifest.yaml.template') -Raw
-$manifest = $template.Replace('__VERSION__', $build.Version).Replace('__SHA256__', $hash)
-if ($manifest -match '__[A-Z_]+__') { throw 'Unresolved manifest placeholder.' }
 New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
-$path = Join-Path $OutputDirectory "JackScott7.PS7-Completion.yaml"
-Set-Content -LiteralPath $path -Value $manifest -Encoding utf8
-$path
+foreach ($item in @(
+    @{ Template = 'version'; Suffix = '' }
+    @{ Template = 'locale'; Suffix = '.locale.en-US' }
+    @{ Template = 'installer'; Suffix = '.installer' }
+)) {
+    $template = Get-Content (Join-Path $PSScriptRoot "../packaging/winget/$($item.Template).yaml.template") -Raw
+    $manifest = $template.Replace('__VERSION__', $build.Version).Replace('__SHA256__', $hash)
+    if ($manifest -match '__[A-Z_]+__') { throw 'Unresolved manifest placeholder.' }
+    $path = Join-Path $OutputDirectory "JackScott7.PS7-Completion$($item.Suffix).yaml"
+    Set-Content -LiteralPath $path -Value $manifest -Encoding utf8
+    $path
+}

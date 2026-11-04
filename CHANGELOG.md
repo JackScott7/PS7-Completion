@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.5.0 - Windows package preparation
+
+### Added
+
+- Include WinGet community manifest files with release assets for the Windows installer.
+
+### Changed
+
+- Document installer prerequisites, unsigned publisher warnings, and upgrade behavior.
+- Reduce installed-module import work while retaining validation of modified registry data.
+
+### Fixed
+
+- Provide the installer's product code in WinGet metadata to support installed-package correlation.
+- Retry SSH config reads after transient failures and respect conditional state in repeated includes.
+- Treat `reg query /d` as a switch so subsequent options remain available.
+- Quote extensionless executable names containing spaces and complete attached option values.
+- Recognize mixed-case `net`, `reg`, and DISM commands and options.
+
 ## 0.1.9 - Extensionless executable names
 
 ### Added

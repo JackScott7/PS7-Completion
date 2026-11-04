@@ -3,6 +3,22 @@ BeforeAll {
 }
 Describe 'Bounded query cache' {
     BeforeEach { InModuleScope PS7-Completion { Clear-PS7CompletionCache } }
+    It 'does not cache a transient SSH file read failure' {
+        $config = Join-Path $TestDrive 'locked-config'
+        Set-Content $config 'Host fixturehost'
+        $lock = [IO.File]::Open($config, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::None)
+        try {
+            InModuleScope PS7-Completion -Parameters @{ Config=$config } {
+                param($Config)
+                { Get-PS7QueryData SshHosts $Config } | Should -Throw
+                $script:Cache.Count | Should -Be 0
+            }
+        } finally { $lock.Dispose() }
+        InModuleScope PS7-Completion -Parameters @{ Config=$config } {
+            param($Config)
+            Get-PS7QueryData SshHosts $Config | Should -Contain fixturehost
+        }
+    }
     It 'shares equivalent lexical SSH paths but keeps different directories distinct' {
         InModuleScope PS7-Completion -Parameters @{ Root = $TestDrive } {
             param($Root)
